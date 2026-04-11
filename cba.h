@@ -161,11 +161,14 @@
 #define CBA_GCC   0
 #define CBA_CLANG 0
 #define CBA_MSVC  0
+
 #define CBA_WINDOWS 0
-#define CBA_MACOS 0
-#define CBA_LINUX 0
+#define CBA_MACOS   0
+#define CBA_LINUX   0
+
 #define CBA_64_BIT 0
 #define CBA_32_BIT 0
+
 #define CBA_X86 0
 #define CBA_ARM 0
 

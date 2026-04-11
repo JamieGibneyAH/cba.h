@@ -82,7 +82,7 @@
     - CBA_[INFO/WARN/ERROR]_PREFIX   prefix to use for info/warn/error macros
     - CBA_MEMORY_BLOCK_SIZE          number of bytes to allocate to the global arena
     - CBA_DEFAULT_STRING_CAPACITY    default (minimum) capacity for strings
-    - CBA_ARRAY_CAPCITY              maximum number of elements allocated to arrays
+    - CBA_ARRAY_CAPACITY             maximum number of elements allocated to arrays
 
 
     
@@ -147,9 +147,9 @@
 */
 
 
-#ifndef CBA_ARRAY_CAPCITY
-    #define CBA_ARRAY_CAPCITY (256)
-#elif CBA_ARRAY_CAPCITY == 0
+#ifndef CBA_ARRAY_CAPACITY
+    #define CBA_ARRAY_CAPACITY (256)
+#elif CBA_ARRAY_CAPACITY == 0
     #error array count must be greater than 0
 #endif
 
@@ -3115,11 +3115,11 @@ CBA_DEF char* fmt_time(u64 nanos, u8 unit_verbosity) {
 
 CBA_DEF void str_arr_append_str(StringArray* arr, String str) {
     if (!arr->items) {
-        arr->items = alloc_array(CBA_ARRAY_CAPCITY, String);
+        arr->items = alloc_array(CBA_ARRAY_CAPACITY, String);
         arr->count = 0;
     }
 
-    assert(arr->count < CBA_ARRAY_CAPCITY,
+    assert(arr->count < CBA_ARRAY_CAPACITY,
            "tried to exceed maximum string count (current: %zu)",
            arr->count);
 
@@ -3201,11 +3201,11 @@ CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator) {
 
 CBA_DEF void cmd_append_str(Command* cmd, String str) {
     if (!cmd->items) {
-        cmd->items = alloc_array(CBA_ARRAY_CAPCITY, String);
+        cmd->items = alloc_array(CBA_ARRAY_CAPACITY, String);
         cmd->count = 0;
     }
 
-    assert(cmd->count < CBA_ARRAY_CAPCITY,
+    assert(cmd->count < CBA_ARRAY_CAPACITY,
            "tried to exceed maximum command count (current: %zu)",
            cmd->count);
 

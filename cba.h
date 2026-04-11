@@ -693,7 +693,8 @@ CBA_DEF b32 file_move(const char* path, const char* new_path);
 ///
 /// You can use `#if CBA_WINDOWS` or `#ifdef _WIN32` to check the platform.
 CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link);
-/// Deletes the file at `path`, returning true if the operation succeeded.
+/// Deletes the file at `path`, returning true if the operation succeeded. If the file is
+/// a directory, its contents will be recursively deleted first.
 CBA_DEF b32 file_delete(const char* path);
 /// Whether a file at `path` exists.
 CBA_DEF b32 file_exists(const char* path);
@@ -1514,19 +1515,56 @@ CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link)
     return result;
 }
 
+#if !CBA_WINDOWS
+static inline int _rment(const char* path, const struct stat* st, int flags, struct FTW* ftwp) {
+    (void)st;
+    (void)flags;
+    (void)ftwp;
+
+    int result = remove(path);
+        
+    if (result != 0) {
+        verbose_print("failed to remove directory entry \"%s\": %s", path, strerror(errno));
+    }
+
+    return result;
+}
+#endif
+
 CBA_DEF b32 file_delete(const char* path) {
     b32 result = false;
 
 #if CBA_WINDOWS
     todo();
 #else
-    // @todo: recursive dir deletion? i.e. if rmdir returns ENOTEMPTY. there's ntfw on
-    // posix which might be useful.
+    if (file_exists(path)) {
+        FileType ft = file_get_type(path);
 
-    result = remove(path) == 0;
+        assert(ft != FILE_TYPE_UNKNOWN, "the file exists, so its type should have been recognised");
 
-    if (!result) {
-        verbose_print("failed to delete \"%s\": %s", path, strerror(errno));
+        if (ft == FILE_TYPE_DIRECTORY) {
+            int r = nftw(path, _rment, 512, FTW_PHYS | FTW_DEPTH);
+
+            if (r == 0) {
+                result = true;
+            }
+            else {
+                verbose_print("failed to recursively delete \"%s\": %s", path, strerror(errno));
+            }
+        } 
+        else {
+            int r = remove(path);
+
+            if (r == 0) {
+                result = true;
+            }
+            else {
+                verbose_print("failed to delete \"%s\": %s", path, strerror(errno));
+            }
+        }
+    }
+    else {
+        result = true;
     }
 #endif
 

@@ -595,6 +595,7 @@ typedef struct Command Command;
 #define is_alpha(ch)        (is_lower(ch) || is_upper(ch))
 #define is_numeric(ch)      ('0' <= (ch) && (ch) <= '9')
 #define is_alphanumeric(ch) (is_alpha(ch) || is_numeric(ch))
+
 #define is_whitespace(ch) ((ch) == ' ' || (ch) == '\n' || (ch) == '\r' || (ch) == '\t')
 #define is_decimal(ch)    ((ch) == '.' || (ch) == ',')
 #define is_separator(ch)  ((ch) == '\\' || (ch) == '/')
@@ -1171,12 +1172,12 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
 #endif
 
     StringArray source_paths = {0};
-    str_arr_append(&source_paths, str_from_cstr(source_path));
+    str_arr_append_cstrs(&source_paths, source_path);
 
     // @jcg: if this header is found in the root directory then it too can be watched -
     // particularly useful when developing cba in its own repository.
     if (file_exists("cba.h")) {
-        str_arr_append(&source_paths, strl("cba.h"));
+        str_arr_append_cstrs(&source_paths, "cba.h");
     }
 
     uninit va_list args;
@@ -1185,7 +1186,7 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
         const char* path = va_arg(args, const char*);
         if (!path) break;
 
-        str_arr_append(&source_paths, str_from_cstr(path));
+        str_arr_append_cstrs(&source_paths, path);
     }
     va_end(args);
 
@@ -1497,7 +1498,7 @@ CBA_DEF i32 file_needs_rebuild(String output_path, String input_path) {
     begin_temp_memory();
 
     StringArray arr = {0};
-    str_arr_append(&arr, input_path);
+    str_arr_append_str(&arr, input_path);
 
     result = files_needs_rebuild(output_path, arr);
 
@@ -2310,7 +2311,7 @@ CBA_DEF StringArray str_to_directory_entries(String path, b32 include_directory_
             str_append_chars(&entry, (char*)dent->d_name, (usize)dent->d_namlen);
 
             if (!str_ends_with(entry, ".") && !str_ends_with(entry, "..")) {
-                str_arr_append(&result, entry);
+                str_arr_append_str(&result, entry);
             }
         }
     }

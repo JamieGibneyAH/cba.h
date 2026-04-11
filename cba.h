@@ -1,5 +1,5 @@
 /*  
-    cba.h | v0.1.1 | https://github.com/jamiegibney/cba.h
+    cba.h | v0.1.2 | https://github.com/jamiegibney/cba.h
   
     STB-style header library for build recipes and general utilities in C.
 
@@ -99,6 +99,13 @@
 
     # Version history
 
+    - v0.1.2 (11 Apr 2026) (by @jamiegibney)
+        - added CBA_NO_COLOR_OUTPUT
+        - assert and panic now use traps
+        - global arena/memory block are extern, and declared in CBA_IMPLEMENTATION block
+        - updated rebuild commands
+        - improved documentation
+        - minor fixes
     - v0.1.1 (11 Apr 2026) (by @jamiegibney)
         - implemented str_to_directory_entries
         - added recursive deletion to file_delete

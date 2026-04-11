@@ -16,7 +16,7 @@
     #include "cba.h"
 
     You can also #define CBA_VERBOSE before the include to see internal logging.
-    And #define CBA_PRINT_ON_BOOTSTRAP to see a message when the program rebuilds itself.
+    And #define CBA_PRINT_ON_REBUILD to see a message when the program rebuilds itself.
   
 
 
@@ -28,7 +28,7 @@
   
     int main(int argc, char** argv) {
         // Allow the program to rebuild itself when modified.
-        CBA_BOOTSTRAP(argc, argv);
+        CBA_REBUILD(argc, argv);
 
         // Optionally create a directory.
         assert(try_mkdir("build"), "failed to create build directory");
@@ -63,8 +63,8 @@
 
     Before including this file, #define any of the below to override them.
   
-    - CBA_BOOTSTRAP_COMMAND          the command to use for bootstrapping
-    - CBA_BOOTSTRAP_MESSAGE          formatted message printed when bootstrapping
+    - CBA_REBUILD_COMMAND            the command to use for rebuilding
+    - CBA_REBUILD_MESSAGE            formatted message printed when rebuilding
     - CBA_[INFO/WARN/ERROR]_PREFIX   prefix to use for info/warn/error macros
     - CBA_MEMORY_BLOCK_SIZE          number of bytes to allocate to the global arena
     - CBA_DEFAULT_STRING_CAPACITY    default (minimum) capacity for strings
@@ -359,28 +359,28 @@
 
 #define CBA_DEF inline static
 
-#ifndef CBA_BOOTSTRAP_MESSAGE
-    #define CBA_BOOTSTRAP_MESSAGE(binary_name) alloc_sprintf("Bootstrapping \"%s\"", (binary_name))
+#ifndef CBA_REBUILD_MESSAGE
+    #define CBA_REBUILD_MESSAGE(binary_name) alloc_sprintf("Rebuilding \"%s\"", (binary_name))
 #endif
 
-#ifndef CBA_BOOTSTRAP_COMMAND
+#ifndef CBA_REBUILD_COMMAND
     #if CBA_CLANG
         #if defined(__cplusplus)
-            #define CBA_BOOTSTRAP_COMMAND(output_path, source_path) "clang++", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang++", "-Wall", "-Wextra", "-o", output_path, source_path
         #else
-            #define CBA_BOOTSTRAP_COMMAND(output_path, source_path) "clang", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang", "-Wall", "-Wextra", "-o", output_path, source_path
         #endif
     #elif CBA_GCC
         #if defined(__cplusplus)
-            #define CBA_BOOTSTRAP_COMMAND(output_path, source_path) "g++", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "g++", "-Wall", "-Wextra", "-o", output_path, source_path
         #else
-            #define CBA_BOOTSTRAP_COMMAND(output_path, source_path) "gcc", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "gcc", "-Wall", "-Wextra", "-o", output_path, source_path
         #endif
     #elif CBA_MSVC
-        #define CBA_BOOTSTRAP_COMMAND(output_path, source_path) "cl.exe", alloc_sprintf("/Fe:%s", (output_path)), source_path
+        #define CBA_REBUILD_COMMAND(output_path, source_path) "cl.exe", alloc_sprintf("/Fe:%s", (output_path)), source_path
     #else
     #endif
-#endif // CBA_BOOTSTRAP_COMMAND
+#endif // CBA_REBUILD_COMMAND
 
 #define unused [[maybe_unused]]
 
@@ -613,9 +613,9 @@ typedef struct Command Command;
 
 #define CBA_COMPILER_INPUTS(...) __VA_ARGS__
 
-CBA_DEF void __cba_bootstrap_build(int argc, char** argv, const char* source_path, ...);
-#define CBA_BOOTSTRAP(argc, argv) __cba_bootstrap_build((argc), (argv), __FILE__, NULL)
-#define CBA_BOOTSTRAP_WITH(argc, argv, ...) __cba_bootstrap_build((argc), (argv), __FILE__, __VA_ARGS__, NULL)
+CBA_DEF void __cba_rebuild_build(int argc, char** argv, const char* source_path, ...);
+#define CBA_REBUILD(argc, argv) __cba_rebuild_build((argc), (argv), __FILE__, NULL)
+#define CBA_REBUILD_WITH(argc, argv, ...) __cba_rebuild_build((argc), (argv), __FILE__, __VA_ARGS__, NULL)
 
 /// Returns an absolute path to the current working directory (i.e., wherever the program
 /// was run from).
@@ -1087,7 +1087,7 @@ CBA_DEF char* win32_err_message(DWORD err) {
 }
 #endif
 
-CBA_DEF void __cba_bootstrap_build(int argc, char** argv, const char* source_path, ...) {
+CBA_DEF void __cba_rebuild_build(int argc, char** argv, const char* source_path, ...) {
     int exit_code = 0;
 
     String binary_path = str_from_cstr(argv[0]);
@@ -1122,12 +1122,12 @@ CBA_DEF void __cba_bootstrap_build(int argc, char** argv, const char* source_pat
         const char* binary_path_cstr = (char*)binary_path.data;
         const char* old_binary_path_cstr = (char*)old_binary_path.data;
 
-#if defined(CBA_PRINT_ON_BOOTSTRAP) || defined(CBA_VERBOSE)
-        info("%s", CBA_BOOTSTRAP_MESSAGE(binary_path_cstr));
+#if defined(CBA_PRINT_ON_REBUILD) || defined(CBA_VERBOSE)
+        info("%s", CBA_REBUILD_MESSAGE(binary_path_cstr));
 #endif
 
         if (file_move(binary_path_cstr, old_binary_path_cstr)) {
-            cmd_append(&cmd, CBA_BOOTSTRAP_COMMAND(argv[0], source_path));
+            cmd_append(&cmd, CBA_REBUILD_COMMAND(argv[0], source_path));
 
             b32 success = cmd_try_run(cmd);
             cmd_reset(&cmd);

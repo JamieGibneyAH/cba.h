@@ -390,18 +390,18 @@
 #ifndef CBA_REBUILD_COMMAND
     #if CBA_CLANG
         #if defined(__cplusplus)
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang++", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang++", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
         #else
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
         #endif
     #elif CBA_GCC
         #if defined(__cplusplus)
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "g++", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "g++", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
         #else
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "gcc", "-Wall", "-Wextra", "-o", output_path, source_path
+            #define CBA_REBUILD_COMMAND(output_path, source_path) "gcc", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
         #endif
     #elif CBA_MSVC
-        #define CBA_REBUILD_COMMAND(output_path, source_path) "cl.exe", alloc_sprintf("/Fe:%s", (output_path)), source_path
+        #define CBA_REBUILD_COMMAND(output_path, source_path) "cl.exe", "/DDEBUG", "/W4", "/nologo", alloc_sprintf("/Fe:%s", (output_path)), source_path
     #else
     #endif
 #endif // CBA_REBUILD_COMMAND

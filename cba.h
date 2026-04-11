@@ -45,10 +45,11 @@
             CBA_COMPILER_INPUTS("main.c"),
         );
 
-        // With GCC, the above creates:
-        // `gcc -ggdb -DDEBUG -Wall -Wextra -o build/main main.c`
+        // With GCC, the above forms:
+        //   gcc -ggdb -DDEBUG -Wall -Wextra -o build/main main.c
+        //
         // And with MSVC:
-        // `cl.exe /ZI /DDEBUG /W4 /nologo /Fe:build/main main.c`
+        //   cl.exe /ZI /DDEBUG /W4 /nologo /Fe:build/main main.c
 
         // Run the command, block until it terminates, and assert that it exits normally.
         cmd_run(cmd);
@@ -57,11 +58,21 @@
     }
     ```
 
+    See also:
+
+    - cmd_try_run(cmd)                         for a non-asserting version
+    - cmd_run_direct("command args")           for running a command in-line
+    - cmd_run(cmd, .output_string = &string)   for capturing a command's output
+    - cmd_run(cmd, .async_pid = &pid)          for non-blocking commands, and
+      proc_wait(pid)                           to wait on async commands
+
+    All functions are documented: see the comments above their definitions for details.
+
 
 
     # Overrideable defines
 
-    Before including this file, #define any of the below to override them.
+    Before including this file, #define any of the below to override them:
   
     - CBA_REBUILD_COMMAND            the command to use for rebuilding
     - CBA_REBUILD_MESSAGE            formatted message printed when rebuilding

@@ -1,5 +1,5 @@
 /*  
-    cba.h | v0.1.0 | https://github.com/jamiegibney/cba.h
+    cba.h | v0.1.1 | https://github.com/jamiegibney/cba.h
   
     STB-style header library for build recipes and general utilities in C.
 
@@ -96,6 +96,15 @@
 
     # Version history
 
+    - v0.1.1 (11 Apr 2026) (by @jamiegibney)
+        - implemented str_to_directory_entries
+        - added recursive deletion to file_delete
+        - file_length now only stats
+        - rebuild now checks for cba.h in cwd
+        - fixed get_cwd
+        - fixed str_ends_with
+        - renamed FILE_TYPE_FILE to FILE_TYPE_REGULAR
+        - renamed CBA_PATH_SEP to CBA_PATH_SEPARATOR
     - v0.1.0 (11 Apr 2026) (by @jamiegibney)
         - initial release
 

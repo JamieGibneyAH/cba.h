@@ -15,8 +15,11 @@
     #define CBA_IMPLEMENTATION
     #include "cba.h"
 
-    You can also #define CBA_VERBOSE before the include to see internal logging.
-    And #define CBA_PRINT_ON_REBUILD to see a message when the program rebuilds itself.
+    Before the include, you can also add:
+
+    #define CBA_VERBOSE            to see internal logging (e.g. for errors)
+    #define CBA_NO_COLOR_OUTPUT    to prevent coloured output (ANSI codes)
+    #define CBA_PRINT_ON_REBUILD   to see a message when the program rebuilds itself
   
 
 

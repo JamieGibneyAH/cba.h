@@ -1113,6 +1113,12 @@ CBA_DEF void __cba_rebuild_build(int argc, char** argv, const char* source_path,
     StringArray source_paths = {0};
     str_arr_append(&source_paths, str_from_cstr(source_path));
 
+    // @jcg: if this header is found in the root directory then it too can be watched -
+    // particularly useful when developing cba in its own repository.
+    if (file_exists("cba.h")) {
+        str_arr_append(&source_paths, strl("cba.h"));
+    }
+
     uninit va_list args;
     va_start(args, source_path);
     for (;;) {

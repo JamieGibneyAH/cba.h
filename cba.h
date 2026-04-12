@@ -730,10 +730,10 @@ CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append);
 /// The operation is recursive, so you can provide nested directories and they will
 /// all be created. For example:
 ///
-/// `try_mkdir("a/b/c/d");`
+/// `file_try_create_directory("a/b/c/d");`
 ///
 /// Will create all non-existing directories.
-CBA_DEF b32 try_mkdir(const char* path);
+CBA_DEF b32 file_try_create_directory(const char* path);
 
 // @mark: processes
 
@@ -1883,7 +1883,7 @@ CBA_INLINE b32 _create_dir(const char* path) {
 }
 #endif
 
-CBA_DEF b32 try_mkdir(const char* path) {
+CBA_DEF b32 file_try_create_directory(const char* path) {
     b32 result = true;
 
     begin_temp_memory();

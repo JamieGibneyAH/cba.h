@@ -647,10 +647,6 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...);
 #define CBA_REBUILD(argc, argv) __cba_rebuild((argc), (argv), __FILE__, NULL)
 #define CBA_REBUILD_WITH(argc, argv, ...) __cba_rebuild((argc), (argv), __FILE__, __VA_ARGS__, NULL)
 
-/// Returns an absolute path to the current working directory (i.e., wherever the program
-/// was run from).
-CBA_DEF String get_cwd(void);
-
 /// Swaps `len_bytes` bytes between the memory at `a` and `b`.
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes);
 
@@ -787,6 +783,10 @@ CBA_DEF String str_from_chars(char* buffer, usize count);
 /// Allocates a string containing the contents of the file at the provided `file_path`. If
 /// the file couldn't be read, the returned string will be zeroed.
 CBA_DEF String str_from_file(const char* file_path);
+/// Returns an absolute path to the current working directory (i.e., wherever the program
+/// was run from).
+CBA_DEF String str_from_cwd(void);
+
 
 /// Writes the contents of `s` to a file at `path`, optionally appending the data to the
 /// file.
@@ -1240,22 +1240,6 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
     if (rebuild_needed != 0) {
         exit(exit_code);
     }
-}
-
-CBA_DEF String get_cwd(void) {
-    String result = str_alloc_with_cap(CBA_MAX_PATH);
-
-#if CBA_WINDOWS
-    char* cwd = _getcwd((char*)result.data, CBA_MAX_PATH);
-#else
-    char* cwd = getcwd((char*)result.data, CBA_MAX_PATH);
-#endif
-
-    assert(cwd, "failed to obtain current working directory");
-
-    result.len = (usize)strlen(cwd);
-
-    return result;
 }
 
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
@@ -2050,10 +2034,22 @@ CBA_DEF String str_from_file(const char* file_path) {
 
 CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append) {
     b32 result = false;
+CBA_DEF String str_from_cwd(void) {
+    String result = str_alloc_with_cap(CBA_MAX_PATH);
 
 #if CBA_WINDOWS
-    todo();
+    char* cwd = _getcwd((char*)result.data, CBA_MAX_PATH);
 #else
+    char* cwd = getcwd((char*)result.data, CBA_MAX_PATH);
+#endif
+
+    assert(cwd, "failed to obtain current working directory");
+
+    result.len = (usize)strlen(cwd);
+
+    return result;
+}
+
     FILE* f = fopen(path, append ? "ab" : "wb");
 
     if (f) {

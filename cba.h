@@ -1172,7 +1172,16 @@ CBA_DEF char* win32_err_message(DWORD err) {
 
     return result;
 }
+
+static inline const char* _os_error() {
+    return win32_err_message(GetLastError());
+}
+#else
+static inline const char* _os_error() {
+    return strerror(errno);
+}
 #endif
+
 
 CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) {
     u64 start_ns = nanos_now();

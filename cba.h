@@ -390,7 +390,7 @@
             #define CBA_REBUILD_COMMAND(output_path, source_path) "gcc", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
         #endif
     #elif CBA_MSVC
-        #define CBA_REBUILD_COMMAND(output_path, source_path) "cl.exe", "/D_CRT_SECURE_NO_WARNINGS", "/DDEBUG", "/W4", "/wd4129", "/nologo", alloc_sprintf("/Fe:%s", (output_path)), source_path
+        #define CBA_REBUILD_COMMAND(output_path, source_path) "cl.exe", "/D_CRT_SECURE_NO_WARNINGS", "/DDEBUG", "/W4", "/nologo", alloc_sprintf("/Fe:%s", (output_path)), source_path
     #else
     #endif
 #endif // CBA_REBUILD_COMMAND

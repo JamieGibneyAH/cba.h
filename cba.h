@@ -411,6 +411,8 @@
     #define CBA_PATH_SEPARATOR '/'
 #endif
 
+#define CBA_WHITESPACE_CHARS " \t\n\r\v\f"
+
 typedef uint8_t   u8;
 typedef uint16_t  u16;
 typedef uint32_t  u32;
@@ -651,6 +653,15 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...);
 #define CBA_REBUILD(argc, argv) __cba_rebuild((argc), (argv), __FILE__, NULL)
 #define CBA_REBUILD_WITH(argc, argv, ...) __cba_rebuild((argc), (argv), __FILE__, __VA_ARGS__, NULL)
 
+/// Returns the current time in nanoseconds.
+///
+/// You shouldn't expect values returned from this function to be relative to any time
+/// point in particular, but they are always relative to each other.
+CBA_DEF u64 nanos_now(void);
+
+/// Sleeps the current thread for `ms` milliseconds.
+CBA_DEF void wait_ms(u64 ms);
+
 /// Swaps `len_bytes` bytes between the memory at `a` and `b`.
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes);
 
@@ -668,11 +679,6 @@ extern Arena global_arena;
 ///
 /// If the arena does not have the capacity to allocate `size` bytes, an assertion will
 /// fail.
-///
-/// See also:
-/// - `alloc`:       allocates an instance of a type
-/// - `alloc_bytes`: allocates a number of bytes
-/// - `alloc_array`: allocates a number of typed elements
 CBA_DEF void* arena_alloc(Arena* arena, usize size);
 
 #define alloc(type) (type*)arena_alloc(&global_arena, sizeof(type))
@@ -681,6 +687,10 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size);
 
 #define begin_temp_memory() global_arena.temp_memory_pos += 1; usize __savepoint = global_arena.used
 #define end_temp_memory()   global_arena.temp_memory_pos -= 1; global_arena.used = __savepoint
+
+/// Returns a pointer to a null-terminated C-string created via a formatted string and
+/// optional arguments. The string is allocated via the global arena.
+CBA_DEF char* alloc_sprintf(const char* fmt, ...) PRINTF_FORMAT(1, 2);
 
 // @mark: files
 
@@ -737,21 +747,12 @@ CBA_DEF b32 file_try_create_directory(const char* path);
 
 // @mark: processes
 
-/// Sleeps the current thread for `ms` milliseconds.
-CBA_DEF void wait_ms(u64 ms);
-
-/// Returns the current time in nanoseconds.
-///
-/// You shouldn't expect values returned from this function to be relative to any time
-/// point in particular, but they are always relative to each other.
-CBA_DEF u64 nanos_now(void);
-
 /// Attempts to spawn a new process with the provided `cmd`, which will be invoked by the
 /// system's shell.
 ///
 /// If the process failed to spawn, the resulting `ProcessID` will be `INVALID_HANDLE`.
 ///
-/// This process needs to permanently allocate memory - be sure not to wrap it in a
+/// This function needs to permanently allocate memory - be sure not to wrap it in a
 /// temporary memory block!
 CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd);
 
@@ -797,7 +798,6 @@ CBA_DEF String str_from_file(const char* file_path);
 /// was run from).
 CBA_DEF String str_from_cwd(void);
 
-
 /// Writes the contents of `s` to a file at `path`, optionally appending the data to the
 /// file.
 CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append);
@@ -817,7 +817,22 @@ CBA_DEF String str_path_file_extension(String str);
 CBA_DEF String str_path_pwd(String str);
 /// Returns a string containing an absolute path obtained from `str`.
 CBA_DEF String str_path_to_absolute(String str);
-
+/// Attempts to split the provided file `path` string into all of its parent paths,
+/// starting with the root directory and ending with the parent directory of the file (if
+/// any). If this fails, the resulting array will be zeroed.
+///
+/// For example, `/a/b/c/d/file.txt` would be split into:
+/// `{ "/a", "/a/b", "/a/b/c", "/a/b/c/d" }`
+CBA_DEF StringArray str_to_parent_paths(String path);
+/// Attempts to return the file names of all entries within a directory at `path`. If this
+/// fails, the resulting array will be zeroed.
+///
+/// If `include_directory_path` is `true`, the resulting strings will include the
+/// directory path. 
+///
+/// For example, for a directory `/a/b` containing files `c.txt` and `d.txt`:
+/// `str_to_directory_entries(path, true); // -> { "/a/b/c.txt", "/a/b/d.txt" }`
+CBA_DEF StringArray str_to_directory_entries(String path, b32 include_directory_path);
 /// Returns a full copy of the provided `str` which includes only the file name of a full
 /// file path and optionally can `include_extension`. If this fails, the resulting string
 /// will be zeroed.
@@ -828,23 +843,6 @@ CBA_DEF String str_path_copy_file_extension(String str);
 /// Returns a full copy of the provided `str` which includes only the parent path of a
 /// full file path. If this fails, the resulting string will be zeroed.
 CBA_DEF String str_path_copy_pwd(String str);
-/// Attempts to split the provided file `path` string into all of its parent paths,
-/// starting with the root directory and ending with the parent directory of the file (if
-/// any). If this fails, the resulting array will be zeroed.
-///
-/// For example, `/a/b/c/d/file.txt` would be split into:
-/// `{ "/a", "/a/b", "/a/b/c", "/a/b/c/d" }`
-CBA_DEF StringArray str_to_parent_paths(String path);
-
-/// Attempts to return the file names of all entries within a directory at `path`. If this
-/// fails, the resulting array will be zeroed.
-///
-/// If `include_directory_path` is `true`, the resulting strings will include the
-/// directory path. 
-///
-/// For example, for a directory `/a/b` containing files `c.txt` and `d.txt`:
-/// `str_to_directory_entries(path, true); // -> { "/a/b/c.txt", "/a/b/d.txt" }`
-CBA_DEF StringArray str_to_directory_entries(String path, b32 include_directory_path);
 
 /// Creates a deep copy of the provided `str`: new memory is allocated for the resulting
 /// string.
@@ -914,7 +912,7 @@ CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to);
 /// of the provided `string`.
 CBA_DEF void str_trim_chars(String* str, const char* delims);
 /// Trims all whitespace characters from the start and end of the provided `string`. This
-/// includes: ' ', '\n', '\r', '\t'.
+/// includes: ' ', '\n', '\r', '\t', '\v', '\f'.
 CBA_DEF void str_trim_whitespace(String* str);
 
 /// Whether `a` is equivalent to `b`.
@@ -1011,11 +1009,12 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest);
 /// Allocates and returns a null-terminated string containing the data of the provided string.
 CBA_DEF char* str_to_cstr(String str);
 
-/// Returns a pointer to a null-terminated C-string created via a formatted string and
-/// optional arguments. The string is allocated via the global arena.
-CBA_DEF char* alloc_sprintf(const char* fmt, ...) PRINTF_FORMAT(1, 2);
-
 /// Returns a formatted pretty string of the amount of memory represented by `num_bytes`.
+///
+/// For example:
+/// `1234     -> "1.205 KB"`
+/// `1234567  -> "1.177 MB"`
+/// `56324857 -> "53.716 MB"`
 CBA_DEF char* fmt_bytes(usize num_bytes);
 
 /// Returns a formatted pretty string of the amount of time represented by `nanos`.
@@ -1316,6 +1315,38 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
     }
 }
 
+CBA_DEF u64 nanos_now(void) {
+    u64 result = 0;
+
+#if CBA_WINDOWS
+    uninit LARGE_INTEGER freq, counter;
+    assert(QueryPerformanceFrequency(&freq), "failed to obtain performance counter frequency");
+    assert(QueryPerformanceCounter(&counter), "failed to obtain performance counter");
+
+    result = counter.QuadPart * (1000000000 / freq.QuadPart);
+#else
+    result = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+#endif
+
+    return result;
+}
+
+CBA_DEF void wait_ms(u64 ms) {
+#if CBA_WINDOWS
+    Sleep((DWORD)ms);
+#else
+    u64 secs = ms / 1000;
+    u64 nanos = (ms - (secs * 1000)) * 1000000;
+
+    struct timespec duration = {
+        .tv_sec  = (long)secs,
+        .tv_nsec = (long)nanos,
+    };
+
+    nanosleep(&duration, NULL);
+#endif
+}
+
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
     u8* lhs = (u8*)a;
     u8* rhs = (u8*)b;
@@ -1349,6 +1380,24 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size) {
     result = arena->base + arena->used + alignment_offset;
     arena->used += effective_size;
     mem_zero(result, size);
+
+    return result;
+}
+
+CBA_DEF char* alloc_sprintf(const char* fmt, ...) {
+    char* result = NULL;
+
+    uninit va_list args;
+    va_start(args, fmt);
+
+    int len = vsnprintf(NULL, 0, fmt, args);
+    assert(len > 0, "failed to construct format string from \"%s\"", fmt);
+
+    result = alloc_array(len + 1, char);
+    vsnprintf(result, len + 1, fmt, args);
+    assert(result[len] == '\0', "null-terminator was not appended");
+
+    va_end(args);
 
     return result;
 }
@@ -1925,38 +1974,6 @@ CBA_DEF b32 file_try_create_directory(const char* path) {
 
 // @mark: procs
 
-CBA_DEF void wait_ms(u64 ms) {
-#if CBA_WINDOWS
-    Sleep((DWORD)ms);
-#else
-    u64 secs = ms / 1000;
-    u64 nanos = (ms - (secs * 1000)) * 1000000;
-
-    struct timespec duration = {
-        .tv_sec  = (long)secs,
-        .tv_nsec = (long)nanos,
-    };
-
-    nanosleep(&duration, NULL);
-#endif
-}
-
-CBA_DEF u64 nanos_now(void) {
-    u64 result = 0;
-
-#if CBA_WINDOWS
-    uninit LARGE_INTEGER freq, counter;
-    assert(QueryPerformanceFrequency(&freq), "failed to obtain performance counter frequency");
-    assert(QueryPerformanceCounter(&counter), "failed to obtain performance counter");
-
-    result = counter.QuadPart * (1000000000 / freq.QuadPart);
-#else
-    result = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#endif
-
-    return result;
-}
-
 #if CBA_WINDOWS
 // @jcg: windows needs some specific escaping of backslashes and quotes:
 // https://learn.microsoft.com/en-gb/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
@@ -2455,32 +2472,6 @@ CBA_DEF String str_path_to_absolute(String str) {
     return result;
 }
 
-CBA_DEF String str_path_copy_file_name(String str, b32 include_extension) {
-    return str_copy(str_path_file_name(str, include_extension));
-}
-
-CBA_DEF String str_path_copy_file_extension(String str) {
-    String result = {0};
-    String slice = str_path_file_extension(str);
-
-    if (slice.data) {
-        result = str_copy(slice);
-    }
-
-    return result;
-}
-
-CBA_DEF String str_path_copy_pwd(String str) {
-    String result = {0};
-    String slice = str_path_pwd(str);
-
-    if (slice.data) {
-        result = str_copy(slice);
-    }
-
-    return result;
-}
-
 CBA_DEF StringArray str_to_parent_paths(String path) {
     StringArray result = {0};
 
@@ -2590,6 +2581,32 @@ CBA_DEF StringArray str_to_directory_entries(String path, b32 include_directory_
 
     closedir(d);
 #endif
+
+    return result;
+}
+
+CBA_DEF String str_path_copy_file_name(String str, b32 include_extension) {
+    return str_copy(str_path_file_name(str, include_extension));
+}
+
+CBA_DEF String str_path_copy_file_extension(String str) {
+    String result = {0};
+    String slice = str_path_file_extension(str);
+
+    if (slice.data) {
+        result = str_copy(slice);
+    }
+
+    return result;
+}
+
+CBA_DEF String str_path_copy_pwd(String str) {
+    String result = {0};
+    String slice = str_path_pwd(str);
+
+    if (slice.data) {
+        result = str_copy(slice);
+    }
 
     return result;
 }
@@ -2906,7 +2923,7 @@ CBA_DEF void str_trim_chars(String* str, const char* delims) {
 }
 
 CBA_DEF void str_trim_whitespace(String* str) {
-    str_trim_chars(str, " \n\r\t\v\f");
+    str_trim_chars(str, CBA_WHITESPACE_CHARS);
 }
 
 CBA_DEF b32 str_eq(String a, String b) {
@@ -3503,24 +3520,6 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
 CBA_DEF char* str_to_cstr(String str) {
     char* result = alloc_array(str.len + 1, char);
     memcpy(result, str.data, str.len);
-    return result;
-}
-
-CBA_DEF char* alloc_sprintf(const char* fmt, ...) {
-    char* result = NULL;
-
-    uninit va_list args;
-    va_start(args, fmt);
-
-    int len = vsnprintf(NULL, 0, fmt, args);
-    assert(len > 0, "failed to construct format string from \"%s\"", fmt);
-
-    result = alloc_array(len + 1, char);
-    vsnprintf(result, len + 1, fmt, args);
-    assert(result[len] == '\0', "null-terminator was not appended");
-
-    va_end(args);
-
     return result;
 }
 

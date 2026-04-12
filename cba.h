@@ -18,7 +18,7 @@
     Before the include, you can also add:
 
     #define CBA_VERBOSE            to see internal logging (e.g. for errors)
-    #define CBA_NO_COLOR_OUTPUT    to prevent coloured output (remove ANSI codes)
+    #define CBA_NO_COLOR_OUTPUT    to prevent coloured output
     #define CBA_PRINT_ON_REBUILD   to see messages when a program rebuilds itself
 
     All functions in this header are documented via comments above their definitions.
@@ -290,12 +290,12 @@
 
 #ifndef CBA_NO_COLOR_OUTPUT
     #define print(s, ...)                                                                    \
-        printf("\e[1m%s:%04i\e[0m: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
+        printf("\x1b[1m%s:%04i\x1b[0m: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
 
     #define assert(cond, s, ...)                                                             \
         if (!(cond)) {                                                                       \
             fprintf(stderr,                                                                  \
-                    "\e[1m%s:%04i \e[31mfailed assertion\e[0m: \"" s "\"\n",                 \
+                    "\x1b[1m%s:%04i \x1b[31mfailed assertion\x1b[0m: \"" s "\"\n",           \
                     __FILE_NAME__,                                                           \
                     __LINE__,                                                                \
                     ## __VA_ARGS__);                                                         \
@@ -304,16 +304,16 @@
     
     #define panic(s, ...)                                                                    \
         fprintf(stderr,                                                                      \
-                "\e[1m%s:%04i \e[31mpanic\e[0m: \"" s "\"\n",                                \
+                "\x1b[30;1m%s:%04i \x1b[31mpanic\x1b[0m: \"" s "\"\n",                          \
                 __FILE_NAME__,                                                               \
                 __LINE__,                                                                    \
                 ## __VA_ARGS__);                                                             \
         CBA_TRAP
 
-    #define info(s, ...)  printf("[\e[1;32m" CBA_INFO_PREFIX "\e[0m] " s "\n", ## __VA_ARGS__)
-    #define warn(s, ...)  printf("[\e[1;33m" CBA_WARN_PREFIX "\e[0m] " s "\n", ## __VA_ARGS__)
-    #define error(s, ...) fprintf(stderr, "[\e[1;31m" CBA_ERROR_PREFIX "\e[0m] " s "\n", ## __VA_ARGS__)
-    #define ping printf("\e[1;32mPING\e[0m @ %s:\e[1m%04i\e[0m\n", __FILE_NAME__, __LINE__)
+    #define info(s, ...)  printf("[\x1b[1;32m" CBA_INFO_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
+    #define warn(s, ...)  printf("[\x1b[1;33m" CBA_WARN_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
+    #define error(s, ...) fprintf(stderr, "[\x1b[1;31m" CBA_ERROR_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
+    #define ping printf("\x1b[1;32mPING\x1b[0m @ %s in %s:\x1b[1m%04i\x1b[0m\n", __FILE_NAME__, __FUNCTION__, __LINE__)
 #else
     #define print(s, ...)                                                                    \
         printf("%s:%04i: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)

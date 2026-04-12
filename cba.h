@@ -978,8 +978,22 @@ CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, u
 /// and progressing backwards. When `where` is non-NULL, it is set to the index of the
 /// last matching character, if found.
 CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, usize* where);
-
-// @todo: other/cstr variants of above.
+/// Whether `needle` could be found in `haystack`, starting the search at the `from` index
+/// and progressing forwards. When `where` is non-NULL, it is set to the index of the
+/// first matching character, if found.
+CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where);
+/// Whether `needle` could be found in `haystack`, starting the search at the `from` index
+/// and progressing backwards. When `where` is non-NULL, it is set to the index of the
+/// last matching character, if found.
+CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where);
+/// Whether `needle` could be found in `haystack`, starting the search at the `from` index
+/// and progressing forwards. When `where` is non-NULL, it is set to the index of the
+/// first matching character, if found.
+CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where);
+/// Whether `needle` could be found in `haystack`, starting the search at the `from` index
+/// and progressing backwards. When `where` is non-NULL, it is set to the index of the
+/// last matching character, if found.
+CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where);
 
 /// Returns the number of characters matching the `needle` char in the provided string.
 CBA_DEF u64 str_count_chars(String haystack, char needle);
@@ -2990,6 +3004,7 @@ CBA_DEF b32 str_find_last_char(String haystack, char needle, usize* where) {
 }
 
 CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, usize* where) {
+    // @todo: could be implemented in terms of str_find_first_other_from?
     b32 result = false;
 
     if (haystack.len && needle.len && (haystack.len > needle.len)) {
@@ -3032,6 +3047,7 @@ CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensit
 }
 
 CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, usize* where) {
+    // @todo: could be implemented in terms of str_find_last_other_from?
     b32 result = false;
 
     if (haystack.len && needle.len && (haystack.len > needle.len)) {
@@ -3152,6 +3168,121 @@ CBA_DEF u64 str_count_chars(String haystack, char needle) {
             result += 1;
         }
     }
+
+    return result;
+}
+
+CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
+    assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
+
+    b32 result = false;
+
+    if (haystack.len && needle.len && (haystack.len > needle.len)) {
+        usize iters = haystack.len - needle.len - from;
+        usize off = 0;
+
+        do {
+            b32 mismatch = false;
+
+            for (usize i = from; i < needle.len; ++i) {
+                u8 a = haystack.data[off + i];
+                u8 b = needle.data[i];
+
+                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
+                    mismatch = a != b;
+                }
+                else {
+                    // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
+                    mismatch = (a != b) && ((a ^ 0x20) != b);
+                }
+
+                if (mismatch) break;
+            }
+
+            if (!mismatch) {
+                result = true;
+
+                if (where) {
+                    *where = off;
+                }
+
+                break;
+            }
+
+            off += 1;
+        } while (off < iters);
+    }
+
+    return result;
+}
+
+CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
+    assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
+
+    b32 result = false;
+
+    if (haystack.len && needle.len && (haystack.len > needle.len)) {
+        isize off = haystack.len - needle.len;
+
+        do {
+            b32 mismatch = false;
+
+            for (usize i = from; i < needle.len; ++i) {
+                u8 a = haystack.data[off + i];
+                u8 b = needle.data[i];
+
+                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
+                    mismatch = a != b;
+                }
+                else {
+                    // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
+                    mismatch = (a != b) && ((a ^ 0x20) != b);
+                }
+
+                if (mismatch) {
+                    break;
+                }
+            }
+
+            if (!mismatch) {
+                result = true;
+
+                if (where) {
+                    *where = off;
+                }
+
+                break;
+            }
+
+            off -= 1;
+        } while (off >= 0);
+    }
+
+    return result;
+}
+
+CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where) {
+    b32 result = false;
+
+    begin_temp_memory();
+    {
+        String needle_str = str_from_cstr(needle);
+        result = str_find_first_other_from(haystack, needle_str, from, case_sensitive, where);
+    }
+    end_temp_memory();
+
+    return result;
+}
+
+CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where) {
+    b32 result = false;
+
+    begin_temp_memory();
+    {
+        String needle_str = str_from_cstr(needle);
+        result = str_find_last_other_from(haystack, needle_str, from, case_sensitive, where);
+    }
+    end_temp_memory();
 
     return result;
 }

@@ -72,6 +72,7 @@
     - CBA_REBUILD_COMPLETED_MESSAGE   formatted message printed when a rebuild succeeds
     - CBA_[INFO/WARN/ERROR]_PREFIX    prefix to use for info/warn/error macros
     - CBA_MEMORY_BLOCK_SIZE           number of bytes to allocate to the global arena
+    - CBA_ALIGNMENT                   number of bytes to align allocations to
     - CBA_DEFAULT_STRING_CAPACITY     default (minimum) capacity for strings
     - CBA_ARRAY_CAPACITY              maximum number of elements allocated to arrays
 
@@ -114,6 +115,12 @@
     #define CBA_MEMORY_BLOCK_SIZE (64 << 20) // 64 MB
 #elif CBA_MEMORY_BLOCK_SIZE == 0
     #error memory block size must be greater than 0
+#endif
+
+#ifndef CBA_ALIGNMENT
+    #define CBA_ALIGNMENT (64)
+#elif CBA_ALIGNMENT == 0
+    #error memory alignment must be greater than 0
 #endif
 
 #ifndef CBA_DEFAULT_STRING_CAPACITY
@@ -496,9 +503,6 @@ struct Arena {
     usize used;
     /// The total number of bytes in the arena's memory block.
     usize capacity;
-    /// Number of bytes to align allocations to. This is set during the first call to
-    /// `arena_alloc` based on the system's cache line size.
-    usize alignment;
     /// How many temporary memory blocks the arena is currently within, used for
     /// debugging.
     i32 temp_memory_pos;
@@ -624,9 +628,6 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...);
 /// Returns an absolute path to the current working directory (i.e., wherever the program
 /// was run from).
 CBA_DEF String get_cwd(void);
-
-/// Returns the size of the processor's cache lines in bytes.
-CBA_DEF usize cache_line_size(void);
 
 /// Swaps `len_bytes` bytes between the memory at `a` and `b`.
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes);
@@ -1095,7 +1096,6 @@ Arena global_arena = {
     .base = global_arena_memory_block,
     .used = 0,
     .capacity = CBA_MEMORY_BLOCK_SIZE,
-    .alignment = 0,
     .temp_memory_pos = 0,
 };
 
@@ -1236,49 +1236,6 @@ CBA_DEF String get_cwd(void) {
     return result;
 }
 
-CBA_DEF usize cache_line_size(void) {
-    usize result = 0;
-
-#if CBA_WINDOWS
-    DWORD buffer_size = 0;
-    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = NULL;
-
-    begin_temp_memory();
-    {
-        GetLogicalProcessorInformation(0, &buffer_size);
-        buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)arena_alloc(&global_arena, buffer_size);
-        GetLogicalProcessorInformation(&buffer, &buffer_size);
-
-        u32 count = buffer_size / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
-
-        for (u32 i = 0; i < count; ++i) {
-            if ((buffer[i].Relationship == RelationCache) && (buffer[i].Cache.Level == 1)) {
-                result = buffer[i].Cache.LineSize;
-                break;
-            }
-        }
-    }
-    end_temp_memory();
-#elif CBA_MACOS
-    usize usize_size = sizeof(usize);
-    sysctlbyname("hw.cachelinesize", &result, &usize_size, 0, 0);
-#else
-    FILE* f = fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size", "r");
-
-    if (f) {
-        u32 i = 0;
-
-        // @jcg: no need to check result because if it's 0 then it'd be returned anyway.
-        fscanf(f, "%u", &i);
-        result = (usize)i;
-
-        fclose(f);
-    }
-#endif
-
-    return result;
-}
-
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
     u8* lhs = (u8*)a;
     u8* rhs = (u8*)b;
@@ -1295,16 +1252,12 @@ CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
 CBA_DEF void* arena_alloc(Arena* arena, usize size) {
     void* result = NULL;
 
-    if (!arena->alignment) {
-        arena->alignment = cache_line_size();
-    }
-
     usize alignment_offset = 0;
     isize curr = (isize)(arena->base + arena->used);
-    isize mask = (isize)arena->alignment - 1;
+    isize mask = (isize)CBA_ALIGNMENT - 1;
 
     if (curr & mask) {
-        alignment_offset = (usize)((isize)arena->alignment - (curr & mask));
+        alignment_offset = (usize)((isize)CBA_ALIGNMENT - (curr & mask));
     }
 
     usize effective_size = size + alignment_offset;

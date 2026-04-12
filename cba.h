@@ -413,9 +413,10 @@ typedef int32_t   b32;
 typedef float     f32;
 typedef double    f64;
 
-#define __STATIC_ASSERT(cond, line) typedef char static_assert_l##line_[(!!(cond))*2-1]
-#define _STATIC_ASSERT(cond, line) __STATIC_ASSERT(cond, line)
-#define STATIC_ASSERT(cond) _STATIC_ASSERT(cond, __LINE__)
+#define ___STATIC_ASSERT(cond, msg) typedef char static_assert_##msg[(!!(cond))*2-1]
+#define __STATIC_ASSERT(cond, line) ___STATIC_ASSERT(cond, at_line_##line)
+#define _STATIC_ASSERT(cond, line)  __STATIC_ASSERT(cond, line)
+#define STATIC_ASSERT(cond)         _STATIC_ASSERT(cond, __LINE__)
 
 STATIC_ASSERT(sizeof(u8)  == sizeof(i8));
 STATIC_ASSERT(sizeof(u16) == sizeof(i16));

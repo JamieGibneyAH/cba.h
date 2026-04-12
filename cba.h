@@ -3938,23 +3938,23 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
         - Updated function documentation
         - Replaced internal strerror and GetLastError calls with _os_error
     - v0.1.2 (11 Apr 2026) (by @jamiegibney)
-        - added CBA_NO_COLOR_OUTPUT
-        - assert and panic now use traps
-        - global arena/memory block are extern, and declared in CBA_IMPLEMENTATION block
-        - updated rebuild commands
-        - improved documentation
-        - minor fixes
+        - Added CBA_NO_COLOR_OUTPUT
+        - Assert and panic now use traps
+        - Global arena/memory block are extern, and declared in CBA_IMPLEMENTATION block
+        - Updated rebuild commands
+        - Improved documentation
+        - Minor fixes
     - v0.1.1 (11 Apr 2026) (by @jamiegibney)
-        - implemented str_to_directory_entries
-        - added recursive deletion to file_delete
-        - file_length now only stats
-        - rebuild now checks for cba.h in cwd
-        - fixed get_cwd
-        - fixed str_ends_with
-        - renamed FILE_TYPE_FILE to FILE_TYPE_REGULAR
-        - renamed CBA_PATH_SEP to CBA_PATH_SEPARATOR
+        - Implemented str_to_directory_entries
+        - Added recursive deletion to file_delete
+        - File_length now only stats
+        - Rebuild now checks for cba.h in cwd
+        - Fixed get_cwd
+        - Fixed str_ends_with
+        - Renamed FILE_TYPE_FILE to FILE_TYPE_REGULAR
+        - Renamed CBA_PATH_SEP to CBA_PATH_SEPARATOR
     - v0.1.0 (11 Apr 2026) (by @jamiegibney)
-        - initial release
+        - Initial release
 
 
 

@@ -1455,7 +1455,8 @@ static usize _seek_fd(FileDescriptor fd, b32 end) {
 
 #if CBA_WINDOWS
     DWORD pos = SetFilePointer(fd, 0, NULL, end ? FILE_END : FILE_BEGIN);
-    assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file");
+    assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file: %s", _os_error());
+    result = (usize)pos;
 #else
     result = (usize)lseek(fd, 0, end ? SEEK_END : SEEK_SET);
 #endif

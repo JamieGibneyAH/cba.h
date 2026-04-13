@@ -37,7 +37,7 @@
         // Create a directory (also works recursively).
         assert(file_try_create_directory("build"), "failed to create build directory");
 
-        // A command is an array of arguments which can be run via the shell.
+        // An array of arguments which can be run like a shell command.
         Command cmd = {0};
 
         // Use the CBA_COMPILER_* macros for compiler-specific flags.
@@ -50,10 +50,10 @@
         );
 
         // With GCC, the above forms:
-        //   gcc -ggdb -DDEBUG -Wall -Wextra -o build/artefacts/main main.c
+        //   gcc -ggdb -DDEBUG -Wall -Wextra -o build/main main.c
         //
         // And with MSVC:
-        //   cl.exe /D_CRT_SECURE_NO_WARNINGS /DDEBUG /W4 /nologo /Fe:build/artefacts/main main.c
+        //   cl.exe /D_CRT_SECURE_NO_WARNINGS /DDEBUG /W4 /nologo /Fe:build/main main.c
 
         // Run the command, block until it terminates, and assert that it exits normally.
         cmd_run(cmd);

@@ -908,6 +908,7 @@ CBA_DEF void str_replace_others(String* str, String from, String to);
 /// `to` C-string.
 CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to);
 
+// @todo: not working?
 /// Trims all characters in the null-terminated `delims` C-string from the start and end
 /// of the provided `string`.
 CBA_DEF void str_trim_chars(String* str, const char* delims);
@@ -915,7 +916,7 @@ CBA_DEF void str_trim_chars(String* str, const char* delims);
 /// includes: ' ', '\n', '\r', '\t', '\v', '\f'.
 CBA_DEF void str_trim_whitespace(String* str);
 
-// @todo: case-insensitive versions?
+// @todo: case-insensitive versions of below?
 
 /// Whether `a` is equivalent to `b`.
 CBA_DEF b32 str_eq(String a, String b);
@@ -1007,6 +1008,9 @@ CBA_DEF u64 str_count_others(String haystack, String needle, b32 case_sensitive)
 CBA_DEF b32 str_parse_to_i64(String str, i64* dest);
 /// Attempts to parse the string `str` to a `f64` value, returning `true` if successful.
 CBA_DEF b32 str_parse_to_f64(String str, f64* dest);
+
+// @todo: docs
+CBA_DEF b32 str_chop_up_to_delim(String* src, String* dest, char delim);
 
 /// Allocates and returns a null-terminated string containing the data of the provided string.
 CBA_DEF char* str_to_cstr(String str);
@@ -1455,7 +1459,8 @@ static usize _seek_fd(FileDescriptor fd, b32 end) {
 
 #if CBA_WINDOWS
     DWORD pos = SetFilePointer(fd, 0, NULL, end ? FILE_END : FILE_BEGIN);
-    assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file");
+    assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file: %s", _os_error());
+    result = (usize)pos;
 #else
     result = (usize)lseek(fd, 0, end ? SEEK_END : SEEK_SET);
 #endif
@@ -3518,6 +3523,25 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
     }
 
     return result;
+}
+
+CBA_DEF b32 str_chop_up_to_delim(String* src, String* dest, char delim) {
+  b32 result = false;
+
+  for (usize i = 0; i < src->len; ++i) {
+    if (src->data[i] == delim) {
+      dest->data = src->data;
+      dest->len  = i;
+
+      src->data += i + 1;
+      src->len  -= i + 1;
+
+      result = true;
+      break;
+    }
+  }
+
+  return result;
 }
 
 CBA_DEF char* str_to_cstr(String str) {

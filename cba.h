@@ -395,8 +395,6 @@
     #endif
 #endif // CBA_REBUILD_COMMAND
 
-// @mark: types
-
 #if CBA_WINDOWS
     typedef HANDLE ProcessID;
     typedef HANDLE FileDescriptor;
@@ -489,6 +487,8 @@ CBA_STATIC_ASSERT(sizeof(f64) == 8);
 #define F64_MIN     (2.2250738585072014e-308)
 #define F64_MAX     (1.7976931348623157e+308)
 #define F64_EPSILON (2.2204460492503131e-16)
+
+// @mark: types
 
 /// A kind of file type.
 enum FileKind {
@@ -650,8 +650,14 @@ typedef struct Command Command;
 #define CBA_COMPILER_INPUTS(...) __VA_ARGS__
 
 CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...);
+
+/// Allow the program to rebuild itself when modified.
 #define CBA_REBUILD(argc, argv) __cba_rebuild((argc), (argv), __FILE__, NULL)
+
+/// Allow the program to rebuild itself when it or any additional files are modified.
 #define CBA_REBUILD_WITH(argc, argv, ...) __cba_rebuild((argc), (argv), __FILE__, __VA_ARGS__, NULL)
+
+// @mark: general
 
 /// Returns the current time in nanoseconds.
 ///
@@ -681,11 +687,16 @@ extern Arena global_arena;
 /// fail.
 CBA_DEF void* arena_alloc(Arena* arena, usize size);
 
+/// Allocates a single instance of a `type`.
 #define alloc(type) (type*)arena_alloc(&global_arena, sizeof(type))
+/// Allocates a `count` of bytes.
 #define alloc_bytes(count) (u8*)arena_alloc(&global_arena, (count))
+/// Allocates a `count` of elements of a `type`.
 #define alloc_array(count, type) (type*)arena_alloc(&global_arena, (count) * sizeof(type))
 
+/// Temporarily stores the current position of the global arena.
 #define begin_temp_memory() global_arena.temp_memory_pos += 1; usize __savepoint = global_arena.used
+/// Restores a previously-saved position of the global arena.
 #define end_temp_memory()   global_arena.temp_memory_pos -= 1; global_arena.used = __savepoint
 
 /// Returns a pointer to a null-terminated C-string created via a formatted string and
@@ -782,8 +793,11 @@ CBA_DEF i32 __proc_wait_va(usize n, ...);
 
 // @mark: string
 
+/// Wraps a string literal with a `String`.
 #define strl(literal) ((String) { .data = (char*)(literal), .len = sizeof(literal) - 1, .cap = sizeof(literal) })
+/// Creates the printf-style formatting arguments for the provided `String`.
 #define sfmt(s) (int)((s).len), (const char*)((s).data)
+/// Expands to a printf-style formatting sequence for printing a `String`.
 #define stok "`%.*s`"
 
 /// Clears the string (sets its length to 0), and zeroes its memory.

@@ -3,9 +3,9 @@
 This is a [stb-style](https://github.com/nothings/stb) header-only library
 designed for writing build recipes in C, and for useful C utilities. It's
 largely based on tsoding's [nob.h library](https://github.com/tsoding/nob.h) —
-a great alternative for the "use C to build C", or "no-build", approach.
+a great alternative for the 'use C to build C' ("no-build") approach.
 
-Grab only `cba.h` with:
+Grab `cba.h` with:
 
 ```sh
 wget https://raw.githubusercontent.com/jamiegibney/cba.h/refs/heads/master/cba.h

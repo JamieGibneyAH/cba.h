@@ -744,6 +744,15 @@ CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append);
 ///
 /// Will create all non-existing directories.
 CBA_DEF b32 file_try_create_directory(const char* path);
+/// Attempts to return the file names of all entries within a directory at `path`. If this
+/// fails, the resulting array will be zeroed.
+///
+/// If `include_directory_path` is `true`, the resulting strings will include the
+/// directory path. 
+///
+/// For example, for a directory `/a/b` containing files `c.txt` and `d.txt`:
+/// `str_to_directory_entries(path, true); // -> { "/a/b/c.txt", "/a/b/d.txt" }`
+CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_directory_path);
 
 // @mark: processes
 
@@ -824,15 +833,6 @@ CBA_DEF String str_path_to_absolute(String str);
 /// For example, `/a/b/c/d/file.txt` would be split into:
 /// `{ "/a", "/a/b", "/a/b/c", "/a/b/c/d" }`
 CBA_DEF StringArray str_to_parent_paths(String path);
-/// Attempts to return the file names of all entries within a directory at `path`. If this
-/// fails, the resulting array will be zeroed.
-///
-/// If `include_directory_path` is `true`, the resulting strings will include the
-/// directory path. 
-///
-/// For example, for a directory `/a/b` containing files `c.txt` and `d.txt`:
-/// `str_to_directory_entries(path, true); // -> { "/a/b/c.txt", "/a/b/d.txt" }`
-CBA_DEF StringArray str_to_directory_entries(String path, b32 include_directory_path);
 /// Returns a full copy of the provided `str` which includes only the file name of a full
 /// file path and optionally can `include_extension`. If this fails, the resulting string
 /// will be zeroed.
@@ -914,6 +914,8 @@ CBA_DEF void str_trim_chars(String* str, const char* delims);
 /// Trims all whitespace characters from the start and end of the provided `string`. This
 /// includes: ' ', '\n', '\r', '\t', '\v', '\f'.
 CBA_DEF void str_trim_whitespace(String* str);
+
+// @todo: case-insensitive versions?
 
 /// Whether `a` is equivalent to `b`.
 CBA_DEF b32 str_eq(String a, String b);
@@ -1968,6 +1970,90 @@ CBA_DEF b32 file_try_create_directory(const char* path) {
     return result;
 }
 
+CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_directory_path) {
+    StringArray result = {0};
+
+    String path_str = str_from_cstr(path);
+
+    assert(path_str.data[path_str.len] == '\0', "path string is not null-terminated");
+
+    FileKind ft = file_get_kind(path);
+    assert(ft == FILE_KIND_DIRECTORY, "the path \"%s\" is not a directory", path);
+
+#if CBA_WINDOWS
+    uninit WIN32_FIND_DATA find_data;
+    uninit HANDLE file;
+    begin_temp_memory();
+    {
+        String tmp = str_copy(path_str);
+
+        if (tmp.data[tmp.len - 1] != '\\') {
+            str_append_char(&tmp, '\\');
+            str_append_null(&tmp);
+        }
+
+        file = FindFirstFileA(tmp.data, &find_data);
+    }
+    end_temp_memory();
+
+    if (file != INVALID_HANDLE) {
+        do {
+            String entry = str_from_cstr((const char*)find_data.cFileName);
+
+            print("next file in dir: " stok, sfmt(entry));
+
+            if (include_directory_path) {
+                str_append_other(&entry, path_str);
+
+                if (!is_separator(path_str.data[path_str.len - 1])) {
+                    str_append_char(&entry, CBA_PATH_SEPARATOR);
+                }
+            }
+
+            str_arr_append_str(&result, entry);
+        } while (FindNextFileA(file, &find_data));
+
+        if (GetLastError() != ERROR_NO_MORE_FILES) {
+            verbose_print("error getting next directory entry: %s", _os_error());
+        }
+
+        FindClose(file);
+    }
+    else {
+        verbose_print("failed to open directory \"%.*s\": %s", sfmt(path_str), _os_error());
+    }
+#else
+    DIR* d = opendir(path);
+    assert(d, "failed to open dir \"%s\": %s", path, _os_error());
+
+    struct dirent* dent = NULL;
+
+    while ((dent = readdir(d))) {
+        if ((dent->d_type == DT_LNK) || (dent->d_type == DT_DIR) || (dent->d_type == DT_REG)) {
+            String entry = str_alloc_with_cap(CBA_MAX_PATH);
+
+            if (include_directory_path) {
+                str_append_other(&entry, path_str);
+
+                if (!is_separator(path_str.data[path_str.len - 1])) {
+                    str_append_char(&entry, CBA_PATH_SEPARATOR);
+                }
+            }
+
+            str_append_chars(&entry, (char*)dent->d_name, (usize)dent->d_namlen);
+
+            if (!str_ends_with(entry, ".") && !str_ends_with(entry, "..")) {
+                str_arr_append_str(&result, entry);
+            }
+        }
+    }
+
+    closedir(d);
+#endif
+
+    return result;
+}
+
 
 
 
@@ -2498,89 +2584,6 @@ CBA_DEF StringArray str_to_parent_paths(String path) {
             last_was_separator = false;
         }
     }
-
-    return result;
-}
-
-CBA_DEF StringArray str_to_directory_entries(String path, b32 include_directory_path) {
-    StringArray result = {0};
-
-    assert(path.data[path.len] == '\0', "path string is not null-terminated");
-    char* path_cstr = (char*)path.data;
-
-    FileKind ft = file_get_kind(path_cstr);
-    assert(ft == FILE_KIND_DIRECTORY, "the path \"%s\" is not a directory", path_cstr);
-
-#if CBA_WINDOWS
-    uninit WIN32_FIND_DATA find_data;
-    uninit HANDLE file;
-    begin_temp_memory();
-    {
-        String tmp = str_copy(path);
-
-        if (tmp.data[tmp.len - 1] != '\\') {
-            str_append_char(&tmp, '\\');
-            str_append_null(&tmp);
-        }
-
-        file = FindFirstFileA(tmp.data, &find_data);
-    }
-    end_temp_memory();
-
-    if (file != INVALID_HANDLE) {
-        do {
-            String entry = str_from_cstr((const char*)find_data.cFileName);
-
-            print("next file in dir: " stok, sfmt(entry));
-
-            if (include_directory_path) {
-                str_append_other(&entry, path);
-
-                if (!is_separator(path.data[path.len - 1])) {
-                    str_append_char(&entry, CBA_PATH_SEPARATOR);
-                }
-            }
-
-            str_arr_append_str(&result, entry);
-        } while (FindNextFileA(file, &find_data));
-
-        if (GetLastError() != ERROR_NO_MORE_FILES) {
-            verbose_print("error getting next directory entry: %s", _os_error());
-        }
-
-        FindClose(file);
-    }
-    else {
-        verbose_print("failed to open directory \"%.*s\": %s", sfmt(path), _os_error());
-    }
-#else
-    DIR* d = opendir(path_cstr);
-    assert(d, "failed to open dir \"%s\": %s", path_cstr, _os_error());
-
-    struct dirent* dent = NULL;
-
-    while ((dent = readdir(d))) {
-        if ((dent->d_type == DT_LNK) || (dent->d_type == DT_DIR) || (dent->d_type == DT_REG)) {
-            String entry = str_alloc_with_cap(CBA_MAX_PATH);
-
-            if (include_directory_path) {
-                str_append_other(&entry, path);
-
-                if (!is_separator(path.data[path.len - 1])) {
-                    str_append_char(&entry, CBA_PATH_SEPARATOR);
-                }
-            }
-
-            str_append_chars(&entry, (char*)dent->d_name, (usize)dent->d_namlen);
-
-            if (!str_ends_with(entry, ".") && !str_ends_with(entry, "..")) {
-                str_arr_append_str(&result, entry);
-            }
-        }
-    }
-
-    closedir(d);
-#endif
 
     return result;
 }

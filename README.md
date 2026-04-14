@@ -95,8 +95,16 @@ allocator, file operations, string operations, and more.
 ## Todo
 
 - [x] Flesh out Windows support
+- [ ] Auto-doc tool
+- [ ] Fix string trim functions
+- [ ] New string functions:
+    - [ ] Chop left/right until char
+    - [ ] Chop left/right until other/cstr
+    - [ ] `str_slice_lshift` and `str_slice_rshift` - for moving a slice/view
+    - [ ] String split by char/cstr/other (into `StringArray`)
+    - [ ] Split lines
 - [ ] `CBA_REBUILD_COMMAND` can be in terms of the `CBA_COMPILER_*` macros
-- [ ] API document (perhaps with a tool to extract doc comments)
+- [ ] `CBA_COMPILER_OPTIMIZE` flag?
 - [ ] Ensure that either path separator is supported on all platforms?
 - [ ] Dynamic array (and perhaps a #define for enabling dynamic allocation)
     - Have a look at the `da_append` implementation in `nob.h`

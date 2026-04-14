@@ -1037,7 +1037,7 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest);
 CBA_DEF b32 str_parse_to_f64(String str, f64* dest);
 
 // @todo: docs
-CBA_DEF b32 str_chop_up_to_delim(String* src, String* dest, char delim);
+CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch);
 
 /// Allocates and returns a null-terminated string containing the data of the provided string.
 CBA_DEF char* str_to_cstr(String str);
@@ -3231,12 +3231,12 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from
 
     if (haystack.len && needle.len && (haystack.len > needle.len)) {
         usize iters = haystack.len - needle.len - from;
-        usize off = 0;
+        usize off = from;
 
         do {
             b32 mismatch = false;
 
-            for (usize i = from; i < needle.len; ++i) {
+            for (usize i = 0; i < needle.len; ++i) {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
 
@@ -3552,23 +3552,23 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
     return result;
 }
 
-CBA_DEF b32 str_chop_up_to_delim(String* src, String* dest, char delim) {
-  b32 result = false;
+CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch) {
+    b32 result = false;
 
-  for (usize i = 0; i < src->len; ++i) {
-    if (src->data[i] == delim) {
-      dest->data = src->data;
-      dest->len  = i;
+    for (usize i = 0; i < src->len; ++i) {
+        if (src->data[i] == ch) {
+            dest->data = src->data;
+            dest->len = i;
 
-      src->data += i + 1;
-      src->len  -= i + 1;
+            src->data += i + 1;
+            src->len -= i + 1;
 
-      result = true;
-      break;
+            result = true;
+            break;
+        }
     }
-  }
 
-  return result;
+    return result;
 }
 
 CBA_DEF char* str_to_cstr(String str) {

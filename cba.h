@@ -2585,16 +2585,14 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 #if CBA_WINDOWS
     uninit WIN32_FIND_DATA find_data;
     uninit HANDLE file;
-    {
-        String tmp = str_copy(path_str);
+    String tmp = str_copy(path_str);
 
-        if (tmp.data[tmp.len - 1] != '\\') {
-            str_append_char(&tmp, '\\');
-            str_append_null(&tmp);
-        }
-
-        file = FindFirstFileA(tmp.data, &find_data);
+    if (tmp.data[tmp.len - 1] != '\\') {
+        str_append_char(&tmp, '\\');
+        str_append_null(&tmp);
     }
+
+    file = FindFirstFileA(tmp.data, &find_data);
 
     if (file != INVALID_HANDLE) {
         do {

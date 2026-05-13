@@ -1889,8 +1889,6 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
     i32 result = 0;
 
 #if CBA_WINDOWS
-    begin_temp_memory();
-
     char* output_path_cstr = str_to_cstr(output_path);
 
     HANDLE output_path_fd = CreateFileA(output_path_cstr, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
@@ -1902,14 +1900,7 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
 
         if (got_output_file_time) {
             for (usize i = 0; i < input_paths.count; ++i) {
-                // @jcg: bit of a dodgy hack, but this is ok because the arena does not
-                // perform other allocations while the copied string data is in used, and so
-                // its memory is not touched. it isn't necessary to use temporary memory here
-                // anyway, but it just helps to keep the memory usage down in the case that
-                // there are a lot of input file paths which need to be copied.
-                begin_temp_memory();
                 char* input_path_cstr = str_to_cstr(input_paths.items[i]);
-                end_temp_memory();
 
                 HANDLE input_path_fd = CreateFileA(input_path_cstr, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
 
@@ -1949,11 +1940,7 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
             result = -1;
         }
     }
-
-    end_temp_memory();
 #else
-    begin_temp_memory();
-
     char* output_path_cstr = str_to_cstr(output_path);
 
     uninit struct stat statbuf;
@@ -1986,8 +1973,6 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
             result = -1;
         }
     }
-
-    end_temp_memory();
 #endif
 
     return result;
@@ -1996,14 +1981,10 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
 CBA_DEF i32 file_needs_rebuild(String output_path, String input_path) {
     i32 result = false;
 
-    begin_temp_memory();
-
     StringArray arr = {0};
     str_arr_append_str(&arr, input_path);
 
     result = files_need_rebuild(output_path, arr);
-
-    end_temp_memory();
 
     return result;
 }
@@ -2057,30 +2038,26 @@ CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link)
         result = copyfile(path, new_path, NULL, COPYFILE_DATA) == 0;
     }
 #else
-    begin_temp_memory();
-    {
-        if (symbolic_link) {
-            result = symlink(path, new_path) == 0;
-        }
-        else {
-            uninit isize size;
-            FileDescriptor existing_fd = open(path, O_RDONLY, 0);
-            FileDescriptor new_fd      = open(new_path, O_WRONLY | O_CREAT, 0666);
-
-            uninit struct stat stat_existing;
-            fstat(existing_fd, &stat_existing);
-            size = sendfile(new_fd, existing_fd, 0, stat_existing.st_size);
-
-            int i = ftruncate(new_fd, size);
-            assert(i == 0, "failed to truncate new file during copy");
-
-            close(new_fd);
-            close(existing_fd);
-
-            result = size == stat_existing.st_size;
-        }
+    if (symbolic_link) {
+        result = symlink(path, new_path) == 0;
     }
-    end_temp_memory();
+    else {
+        uninit isize size;
+        FileDescriptor existing_fd = open(path, O_RDONLY, 0);
+        FileDescriptor new_fd      = open(new_path, O_WRONLY | O_CREAT, 0666);
+
+        uninit struct stat stat_existing;
+        fstat(existing_fd, &stat_existing);
+        size = sendfile(new_fd, existing_fd, 0, stat_existing.st_size);
+
+        int i = ftruncate(new_fd, size);
+        cba_assert(i == 0, "failed to truncate new file during copy");
+
+        close(new_fd);
+        close(existing_fd);
+
+        result = size == stat_existing.st_size;
+    }
 #endif
 
     if (!result) {
@@ -2339,7 +2316,6 @@ CBA_INLINE b32 _create_dir(const char* path) {
 CBA_DEF b32 file_try_create_directory(const char* path) {
     b32 result = true;
 
-    begin_temp_memory();
     {
         String path_str = str_from_cstr(path);
 
@@ -2367,7 +2343,6 @@ CBA_DEF b32 file_try_create_directory(const char* path) {
             result = true;
         }
     }
-    end_temp_memory();
 
     return result;
 }
@@ -2385,7 +2360,6 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 #if CBA_WINDOWS
     uninit WIN32_FIND_DATA find_data;
     uninit HANDLE file;
-    begin_temp_memory();
     {
         String tmp = str_copy(path_str);
 
@@ -2396,7 +2370,6 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 
         file = FindFirstFileA(tmp.data, &find_data);
     }
-    end_temp_memory();
 
     if (file != INVALID_HANDLE) {
         do {
@@ -2601,11 +2574,9 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
                 if (exec_result >= 0) {
                     result = (ProcessID)cpid;
 
-                    begin_temp_memory();
                     {
                         verbose_print("spawned process from \"%s\"", cmd_flatten_to_cstr(cmd));
                     }
-                    end_temp_memory();
                 }
                 else {
                     verbose_print("failed to exec child process for \"%s\": %s", arr[0], _os_error());
@@ -2969,12 +2940,10 @@ CBA_DEF String str_path_to_absolute(String str) {
         }
         else {
             // the path appears relative, so prepending the cwd should work.
-            begin_temp_memory();
             {
                 String cwd = str_from_cwd();
                 str_append_other(&result, cwd);
             }
-            end_temp_memory();
 
             str_append_char(&result, CBA_PATH_SEPARATOR);
             str_append_other(&result, str);
@@ -3561,12 +3530,8 @@ CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensiti
 CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, usize* where) {
     uninit b32 result;
 
-    begin_temp_memory();
-    {
-        String needle_str = str_from_cstr(needle);
-        result = str_find_first_other(haystack, needle_str, case_sensitive, where);
-    }
-    end_temp_memory();
+    String needle_str = str_from_cstr(needle);
+    result = str_find_first_other(haystack, needle_str, case_sensitive, where);
 
     return result;
 }
@@ -3574,12 +3539,8 @@ CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_se
 CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, usize* where) {
     uninit b32 result;
 
-    begin_temp_memory();
-    {
-        String needle_str = str_from_cstr(needle);
-        result = str_find_last_other(haystack, needle_str, case_sensitive, where);
-    }
-    end_temp_memory();
+    String needle_str = str_from_cstr(needle);
+    result = str_find_last_other(haystack, needle_str, case_sensitive, where);
 
     return result;
 }
@@ -3744,12 +3705,8 @@ CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from,
 CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where) {
     b32 result = false;
 
-    begin_temp_memory();
-    {
-        String needle_str = str_from_cstr(needle);
-        result = str_find_first_other_from(haystack, needle_str, from, case_sensitive, where);
-    }
-    end_temp_memory();
+    String needle_str = str_from_cstr(needle);
+    result = str_find_first_other_from(haystack, needle_str, from, case_sensitive, where);
 
     return result;
 }
@@ -3757,23 +3714,16 @@ CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize 
 CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where) {
     b32 result = false;
 
-    begin_temp_memory();
-    {
-        String needle_str = str_from_cstr(needle);
-        result = str_find_last_other_from(haystack, needle_str, from, case_sensitive, where);
-    }
-    end_temp_memory();
+    String needle_str = str_from_cstr(needle);
+    result = str_find_last_other_from(haystack, needle_str, from, case_sensitive, where);
 
     return result;
 }
 
 CBA_DEF u64 str_count_cstrs(String haystack, const char* needle, b32 case_sensitive) {
-    begin_temp_memory();
-
     String needle_str = str_from_cstr(needle);
     u64 result = str_count_others(haystack, needle_str, case_sensitive);
 
-    end_temp_memory();
     return result;
 }
 
@@ -4004,12 +3954,8 @@ CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch) {
 CBA_DEF b32 str_chop_up_to_cstr(String* src, String* dest, const char* cstr, b32 case_sensitive) {
     uninit b32 result;
 
-    begin_temp_memory();
-    {
-        String str = str_from_cstr(cstr);
-        result = str_chop_up_to_other(src, dest, str, case_sensitive);
-    }
-    end_temp_memory();
+    String str = str_from_cstr(cstr);
+    result = str_chop_up_to_other(src, dest, str, case_sensitive);
 
     return result;
 }

@@ -401,32 +401,6 @@
     #define CBA_LITERAL(type) (type)
 #endif
 
-#ifndef CBA_REBUILD_FAILED_MESSAGE
-    #define CBA_REBUILD_FAILED_MESSAGE(binary_name) alloc_sprintf("Failed to rebuild \"%s\"", (binary_name))
-#endif
-#ifndef CBA_REBUILD_COMPLETED_MESSAGE
-    #define CBA_REBUILD_COMPLETED_MESSAGE(binary_name, elapsed_ns) alloc_sprintf("Rebuilt \"%s\" in %s", (binary_name), fmt_time((elapsed_ns), 0))
-#endif
-
-#ifndef CBA_REBUILD_COMMAND
-    #if CBA_CLANG
-        #if defined(__cplusplus)
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang++", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
-        #else
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "clang", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
-        #endif
-    #elif CBA_GCC
-        #if defined(__cplusplus)
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "g++", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
-        #else
-            #define CBA_REBUILD_COMMAND(output_path, source_path) "gcc", "-DDEBUG", "-Wall", "-Wextra", "-o", output_path, source_path
-        #endif
-    #elif CBA_MSVC
-        #define CBA_REBUILD_COMMAND(output_path, source_path) "cl.exe", "/D_CRT_SECURE_NO_WARNINGS", "/DDEBUG", "/W4", "/nologo", alloc_sprintf("/Fe:%s", (output_path)), source_path
-    #else
-    #endif
-#endif // CBA_REBUILD_COMMAND
-
 #if CBA_WINDOWS
     typedef HANDLE ProcessID;
     typedef HANDLE FileDescriptor;
@@ -900,7 +874,7 @@ typedef struct Command Command;
     #define CBA_COMPILER_C "cl.exe"
     #define CBA_COMPILER_CPP "cl.exe"
     #define CBA_COMPILER_OUTPUT(output) alloc_sprintf("/Fe:%s", output)
-    #define CBA_COMPILER_COMMON_FLAGS "/W4", "/nologo"
+    #define CBA_COMPILER_COMMON_FLAGS "/W4", "/nologo", "/D_CRT_SECURE_NO_WARNINGS"
     #define CBA_COMPILER_DEBUG_FLAGS "/ZI", "/DDEBUG"
     #define CBA_COMPILER_RELEASE_FLAGS "/O3", "/DNDEBUG"
 #elif CBA_GCC
@@ -920,6 +894,23 @@ typedef struct Command Command;
 #endif
 
 #define CBA_COMPILER_INPUTS(...) __VA_ARGS__
+
+#ifndef CBA_REBUILD_FAILED_MESSAGE
+    #define CBA_REBUILD_FAILED_MESSAGE(binary_name) alloc_sprintf("Failed to rebuild \"%s\"", (binary_name))
+#endif
+#ifndef CBA_REBUILD_COMPLETED_MESSAGE
+    #define CBA_REBUILD_COMPLETED_MESSAGE(binary_name, elapsed_ns) alloc_sprintf("Rebuilt \"%s\" in %s", (binary_name), fmt_time((elapsed_ns), 0))
+#endif
+
+#ifndef CBA_REBUILD_COMMAND
+    #if defined(__cplusplus)
+        #define CBA_REBUILD_COMMAND(output_path, source_path)                      \
+            CBA_COMPILER_CPP, CBA_COMPILER_COMMON_FLAGS, CBA_COMPILER_OUTPUT(output_path), CBA_COMPILER_INPUTS(source_path)
+    #else
+        #define CBA_REBUILD_COMMAND(output_path, source_path)                    \
+            CBA_COMPILER_C, CBA_COMPILER_COMMON_FLAGS, CBA_COMPILER_OUTPUT(output_path), CBA_COMPILER_INPUTS(source_path)
+    #endif
+#endif
 
 CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...);
 

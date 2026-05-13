@@ -1,14 +1,22 @@
 # `cba.h`
 
 This is a [stb-style](https://github.com/nothings/stb) header-only library
-designed for writing build recipes in C, and for useful C utilities. It's
-largely based on tsoding's [nob.h library](https://github.com/tsoding/nob.h) —
-a great alternative for the 'use C to build C' ("no-build") approach.
+designed for writing build recipes in C and useful C utilities.
 
-Grab `cba.h` with:
+It's largely based on tsoding's [nob.h
+library](https://github.com/tsoding/nob.h) — a wonderful alternative for the
+'use C to build C' approach.
+
+Grab `cba.h` directly with:
 
 ```sh
 wget https://raw.githubusercontent.com/jamiegibney/cba.h/refs/heads/master/cba.h
+```
+
+Or clone the repository:
+
+```sh
+git clone git@github.com:jamiegibney/cba.h cba
 ```
 
 
@@ -41,7 +49,7 @@ int main(int argc, char** argv) {
     CBA_REBUILD(argc, argv);
 
     // Create a directory (also works recursively).
-    assert(file_try_create_directory("build"), "failed to create build directory");
+    file_try_create_directory("build");
 
     // An array of arguments which can be run like a shell command.
     Command cmd = {0};
@@ -94,14 +102,10 @@ allocator, file operations, string operations, and more.
 
 ## Todo
 
-- [x] Flesh out Windows support
-- [ ] Auto-doc tool
-- [ ] New string functions:
-    - [ ] String split by char/cstr/other (into `StringArray`)
-    - [ ] Chop right/back until char/other/cstr
-- [ ] `CBA_REBUILD_COMMAND` can be in terms of the `CBA_COMPILER_*` macros
-- [ ] `CBA_COMPILER_OPTIMIZE` flag?
-- [ ] Hash table/set
-- [ ] Automatic `compile_commands.json` generation?
-- [ ] Piping mechanism
-- [ ] Optional function prefixes (perhaps `#define CBA_STRIP_PREFIXES`)
+- Hash table/set
+- New string functions:
+    - String split by char/cstr/other (into `StringArray`)
+    - Chop right/back until char/other/cstr
+- `CBA_COMPILER_OPTIMIZE` flag?
+- Auto-doc tool
+- Piping mechanism(?)

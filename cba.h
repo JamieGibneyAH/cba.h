@@ -1583,7 +1583,7 @@ CBA_DEF b32 cmd_try_run_direct_with_opts(const char* command, CommandOptions opt
 /// If the command is asynchronous, this returns `true` if the process was started.
 /// Otherwise, this returns `true` if the processed exited successfully.
 #define cmd_try_run_direct(cmd, ...) \
-    cmd_try_run_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ })
+    cmd_try_run_direct_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ })
 
 /// Runs the whole `command` with default options, and asserts that the commands suceeds.
 ///

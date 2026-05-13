@@ -68,7 +68,7 @@
     - CBA_REBUILD_FAILED_MESSAGE      formatted message printed when a rebuild fails
     - CBA_REBUILD_COMPLETED_MESSAGE   formatted message printed when a rebuild succeeds
     - CBA_[INFO/WARN/ERROR]_PREFIX    prefix to use for info/warn/error macros
-    - CBA_MEMORY_BLOCK_SIZE           number of bytes to allocate to the global arena
+    - CBA_MEMORY_BLOCK_SIZE           number of bytes to allocate for arena memory blocks
     - CBA_ALIGNMENT                   number of bytes to align allocations to
     - CBA_MIN_STRING_CAPACITY         minimum capacity for strings
     - CBA_MIN_ARRAY_CAPACITY          minimum capacity for string arrays and commands
@@ -85,14 +85,15 @@
     - The String type is always null-terminated UNLESS you take a "slice" of another string.
       You can use `str_to_cstr` or `str_copy` to always allocate a null-terminated version.
     
-    - All allocations are done via a single arena allocator (global_arena). This uses a block
-      of statically-allocated memory and partitions it into smaller regions, which you can do
-      via the alloc, alloc_bytes, and alloc_array macros.
+    - All allocations are done via a single arena allocator (global_arena). This
+      partitions a large memory block into smaller regions, which you can do via the
+      alloc, alloc_bytes, and alloc_array macros. The arena will dynamically allocate new
+      memory blocks if it exceeds its current capacity.
     
     - "Dynamically allocated" types and the da_append macro don't use actual dynamic allocation
       (i.e. via realloc()), but will simply allocate new space in the global arena. This is
-      inefficient, but keeps all of the memory in one block and avoids any manual call to
-      malloc etc.
+      inefficient, but keeps all of the memory within memory blocks and avoids manual calls
+      to malloc, etc.
 
 
 
@@ -112,7 +113,7 @@
     #error array count must be greater than 0
 #endif
 
-/// Number of bytes to allocate to the global arena.
+/// Number of bytes to allocate to each of the global arena's memory blocks.
 #ifndef CBA_MEMORY_BLOCK_SIZE
     #define CBA_MEMORY_BLOCK_SIZE (64 << 20) // 64 MB
 #elif CBA_MEMORY_BLOCK_SIZE == 0
@@ -743,6 +744,15 @@ enum FileKind {
 };
 typedef enum FileKind FileKind;
 
+struct ArenaBlockFooter {
+    u8* base;
+    usize used;
+    usize capacity;
+};
+typedef struct ArenaBlockFooter ArenaBlockFooter;
+
+#define get_arena_footer(arena) ((ArenaBlockFooter*)((arena)->base + (arena)->capacity))
+
 /// An arena allocator, used for linearly partitioning a memory block into smaller
 /// regions.
 struct Arena {
@@ -752,6 +762,9 @@ struct Arena {
     usize used;
     /// The total number of bytes in the arena's memory block.
     usize capacity;
+
+    /// Minimum block size to use for allocating memory blocks.
+    usize min_block_size;
 };
 typedef struct Arena Arena;
 
@@ -967,9 +980,6 @@ CBA_DEF String git_committer_name();
 
 // @mark: arena
 
-/// Statically-allocated arena memory block, assigned to the global arena.
-extern u8 global_arena_memory_block[CBA_MEMORY_BLOCK_SIZE];
-
 /// Global arena, used for all cba allocations.
 extern Arena global_arena;
 
@@ -980,6 +990,8 @@ extern Arena global_arena;
 /// If the arena does not have the capacity to allocate `size` bytes, an assertion will
 /// fail.
 CBA_DEF void* arena_alloc(Arena* arena, usize size);
+/// Frees all of the arena's memory blocks and zeroes the arena.
+CBA_DEF void arena_free(Arena* arena);
 
 /// Allocates a single instance of a `type`.
 #define alloc(type) (type*)arena_alloc(&global_arena, sizeof(type))
@@ -1657,14 +1669,7 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
 
 #ifdef CBA_IMPLEMENTATION
 
-u8 global_arena_memory_block[CBA_MEMORY_BLOCK_SIZE] = {0};
-
-Arena global_arena = {
-    .base = global_arena_memory_block,
-    .used = 0,
-    .capacity = CBA_MEMORY_BLOCK_SIZE,
-};
-
+Arena global_arena = {0};
 
 #if CBA_WINDOWS
 #define CBA_WIN32_ERR_MSG_SIZE (4 << 10) // 4 KB
@@ -1986,15 +1991,54 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size) {
 
     usize effective_size = size + alignment_offset;
 
-    cba_assert((arena->used + effective_size) <= arena->capacity,
-               "arena overflowed its memory block (capacity: %zu, used: %zu, allocating: %zu)",
-               arena->capacity, arena->used, effective_size);
+    if ((arena->used + effective_size) > arena->capacity) {
+        if (!arena->min_block_size) {
+        ping;
+            arena->min_block_size = CBA_MEMORY_BLOCK_SIZE;
+            cba_assert(is_pow2(CBA_ALIGNMENT), "CBA_ALIGNMENT is not a power-of-two value");
+        }
+
+        ArenaBlockFooter new_footer = {
+            .base     = arena->base,
+            .used     = arena->used,
+            .capacity = arena->capacity,
+        };
+
+        uninit usize block_size;
+        if (effective_size > arena->min_block_size) {
+            block_size = effective_size + sizeof(ArenaBlockFooter);
+        }
+        else {
+            block_size = arena->min_block_size + sizeof(ArenaBlockFooter);
+        }
+
+        arena->base     = (u8*)calloc(block_size, 1);
+        arena->used     = 0;
+        arena->capacity = block_size - sizeof(ArenaBlockFooter);
+
+        *get_arena_footer(arena) = new_footer;
+    }
 
     result = arena->base + arena->used + alignment_offset;
     arena->used += effective_size;
     memz(result, size);
 
     return result;
+}
+
+
+CBA_DEF void arena_free(Arena* arena) {
+    while (arena->base) {
+        ArenaBlockFooter footer = *get_arena_footer(arena);
+
+        free(arena->base);
+
+        arena->base     = footer.base;
+        arena->used     = footer.used;
+        arena->capacity = footer.capacity;
+    }
+
+    memz(arena, sizeof(Arena));
 }
 
 

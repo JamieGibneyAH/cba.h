@@ -977,6 +977,11 @@ CBA_DEF b32 is_little_endian();
 /// Returns the next power of two value for `x`.
 CBA_DEF usize next_pow2(usize x);
 
+/// Whether the provided executable name could be found in the system's PATH.
+///
+/// On Unix systems this uses `which`, and on Windows it uses `where.exe`.
+CBA_DEF b32 has_exe_in_path(const char* exe_name);
+
 // @mark: arena
 
 /// Statically-allocated arena memory block, assigned to the global arena.
@@ -1842,6 +1847,18 @@ CBA_DEF usize next_pow2(usize x) {
 
         result = x;
     }
+
+    return result;
+}
+
+CBA_DEF b32 has_exe_in_path(const char* exe_name) {
+    b32 result = false;
+
+#if CBA_WINDOWS
+    #error @todo: where.exe
+#else
+    result = cmd_try_run_direct(alloc_sprintf("which -s '%s'", exe_name));
+#endif
 
     return result;
 }

@@ -3589,6 +3589,10 @@ CBA_DEF b32 str_trim_null(String* str) {
 CBA_DEF StringArray str_split_by(String str, char delim) {
     StringArray result = {0};
 
+    CBA_UNUSED(str); CBA_UNUSED(delim);
+
+    todo();
+
     return result;
 }
 

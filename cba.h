@@ -4747,8 +4747,6 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
 CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
     b32 result = false;
 
-    usize sp = global_arena.used;
-
     verbose_print("running `%s`", cmd_flatten_to_cstr(cmd));
 
     FileDescriptor output_fd = INVALID_HANDLE;
@@ -4797,8 +4795,6 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
                     opts.output_string->len = bytes_read;
                 }
             }
-
-            global_arena.used = sp;
         }
     }
 

@@ -35,7 +35,7 @@
         CBA_REBUILD(argc, argv);
 
         // Create a directory (also works recursively).
-        wf_assert(file_try_create_directory("build"), "failed to create build directory");
+        file_try_create_directory("build");
 
         // An array of arguments which can be run like a shell command.
         Command cmd = {0};

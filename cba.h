@@ -1288,6 +1288,11 @@ CBA_DEF b32 str_eq(String a, String b);
 /// Whether `a` is equivalent to the null-terminated `b` C-string.
 CBA_DEF b32 str_eq_cstr(String str, const char* cstr);
 
+/// Whether `a` is equivalent to `b`, regardless of case.
+CBA_DEF b32 str_eq_ignoring_case(String a, String b);
+/// Whether `a` is equivalent to the null-terminated `b` C-string, regardless of case.
+CBA_DEF b32 str_eq_cstr_ignoring_case(String str, const char* cstr);
+
 /// Whether `str` starts with `cstr` (excluding a null-terminator).
 CBA_DEF b32 str_starts_with(String str, const char* cstr);
 /// Whether `str` ends with `cstr` (excluding a null-terminator).
@@ -3605,6 +3610,56 @@ CBA_DEF b32 str_eq(String a, String b) {
 
 CBA_DEF b32 str_eq_cstr(String str, const char* cstr) {
     return (str.len == (usize)strlen(cstr)) && (memcmp(str.data, cstr, str.len) == 0);
+}
+
+CBA_DEF b32 str_eq_ignoring_case(String a, String b) {
+    b32 result = true;
+
+    if (a.len == b.len) {
+        for (usize i = 0; i < a.len; ++i) {
+            char cha = a.data[i];
+            char chb = b.data[i];
+
+            b32 matches = (cha == chb) ||
+                          (is_alpha(cha) && is_alpha(chb) && ((cha ^ 0x20) == chb));
+
+            if (!matches) {
+                result = false;
+                break;
+            }
+        }
+    }
+    else {
+        result = false;
+    }
+
+    return result;
+}
+
+CBA_DEF b32 str_eq_cstr_ignoring_case(String str, const char* cstr) {
+    b32 result = true;
+
+    usize b_len = (usize)strlen(cstr);
+
+    if (str.len == b_len) {
+        for (usize i = 0; i < str.len; ++i) {
+            char cha = str.data[i];
+            char chb = cstr[i];
+
+            b32 matches = (cha == chb) ||
+                          (is_alpha(cha) && is_alpha(chb) && ((cha ^ 0x20) == chb));
+
+            if (!matches) {
+                result = false;
+                break;
+            }
+        }
+    }
+    else {
+        result = false;
+    }
+
+    return result;
 }
 
 CBA_DEF b32 str_starts_with(String str, const char* cstr) {

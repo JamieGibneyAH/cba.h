@@ -1248,6 +1248,9 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims);
 /// includes: ' ', '\n', '\r', '\t', '\v', '\f', returning `true` if any characters were
 /// trimmed.
 CBA_DEF b32 str_trim_whitespace(String* str);
+/// Trims all null characters (`'\0'`) from the start and end of the provided `string`. If
+/// any characters were trimmed, `true` is returned.
+CBA_DEF b32 str_trim_null(String* str);
 
 /// Splits the provided `String` by `delim`, returning an array of the separated strings.
 /// The `delim` character will not be included in any of the resulting strings.
@@ -3390,6 +3393,32 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims) {
 
 CBA_DEF b32 str_trim_whitespace(String* str) {
     return str_trim_chars(str, CBA_WHITESPACE_CHARS);
+}
+
+CBA_DEF b32 str_trim_null(String* str) {
+    b32 result = false;
+
+    if (str->len) {
+        isize start = 0;
+        isize end = str->len - 1;
+
+        for (; start < (isize)str->len; ++start) {
+            if (str->data[start] != '\0') {
+                break;
+            }
+        }
+
+        for (; end > start; --end) {
+            if (str->data[end] != '\0') {
+                break;
+            }
+        }
+
+        str->data += start;
+        str->len = end - start + 1;
+    }
+
+    return result;
 }
 
 CBA_DEF StringArray str_split_by(String str, char delim) {

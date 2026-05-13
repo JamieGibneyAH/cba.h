@@ -110,7 +110,7 @@
 
 /// Number of bytes to allocate to the global arena.
 #ifndef CBA_MEMORY_BLOCK_SIZE
-    #define CBA_MEMORY_BLOCK_SIZE (8 << 20) // 8 MB
+    #define CBA_MEMORY_BLOCK_SIZE (64 << 20) // 64 MB
 #elif CBA_MEMORY_BLOCK_SIZE == 0
     #error memory block size must be greater than 0
 #endif

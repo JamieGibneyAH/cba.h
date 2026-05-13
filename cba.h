@@ -982,6 +982,17 @@ CBA_DEF usize next_pow2(usize x);
 /// On Unix systems this uses `which`, and on Windows it uses `where.exe`.
 CBA_DEF b32 has_exe_in_path(const char* exe_name);
 
+/// Whether the current git repository is checked out on a "main" or "master" branch.
+CBA_DEF b32 is_main_git_branch();
+/// Returns the (short) hash of the currently checked out git commit, if found.
+CBA_DEF String git_commit_hash();
+/// Returns the full hash of the currently checked out git commit, if found.
+CBA_DEF String git_full_commit_hash();
+/// Returns the name of the currently checked out git branch, if found.
+CBA_DEF String git_branch_name();
+/// Returns the name of the committer for the currently checked out git commit, if found.
+CBA_DEF String git_committer_name();
+
 // @mark: arena
 
 /// Statically-allocated arena memory block, assigned to the global arena.
@@ -1859,6 +1870,59 @@ CBA_DEF b32 has_exe_in_path(const char* exe_name) {
 #else
     result = cmd_try_run_direct(alloc_sprintf("which -s '%s'", exe_name));
 #endif
+
+    return result;
+}
+
+CBA_DEF b32 is_main_git_branch() {
+    b32 result = false;
+
+    String capture = {0};
+    if (cmd_try_run_direct("git branch", .output_string = &capture) &&
+        (str_contains_cstr(capture, "main", false) ||
+         str_contains_cstr(capture, "master", false))) {
+        result = true;
+    }
+
+    return result;
+}
+
+CBA_DEF String git_commit_hash() {
+    String result = str_from_cstr("[UNKNOWN COMMIT HASH]");
+
+    if (cmd_try_run_direct("git log --pretty=format:%h -n 1", .output_string = &result)) {
+        str_trim_whitespace(&result);
+    }
+
+    return result;
+}
+
+CBA_DEF String git_full_commit_hash() {
+    String result = str_from_cstr("[UNKNOWN COMMIT HASH]");
+
+    if (cmd_try_run_direct("git log --pretty=format:%H -n 1", .output_string = &result)) {
+        str_trim_whitespace(&result);
+    }
+
+    return result;
+}
+
+CBA_DEF String git_branch_name() {
+    String result = str_from_cstr("[UNKNOWN BRANCH]");
+
+    if (cmd_try_run_direct("git branch --show-current", .output_string = &result)) {
+        str_trim_whitespace(&result);
+    }
+
+    return result;
+}
+
+CBA_DEF String git_committer_name() {
+    String result = str_from_cstr("[UNKNOWN COMMITTER]");
+
+    if (cmd_try_run_direct("git log --pretty=format:%an -n 1", .output_string = &result)) {
+        str_trim_whitespace(&result);
+    }
 
     return result;
 }

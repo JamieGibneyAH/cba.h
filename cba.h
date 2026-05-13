@@ -793,6 +793,11 @@ struct CommandOptions {
     ///
     /// @important: this option cannot be paired with a non-null `async_pid`.
     b32 silence_output;
+    /// Optional pointer to an `int` to set to the process' exit code. If the process
+    /// failed to spawn, this will be set to `-1`.
+    ///
+    /// @important: this option cannot be paired with a non-null `async_pid`.
+    int* exit_code;
 };
 typedef struct CommandOptions CommandOptions;
 
@@ -1091,8 +1096,11 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd);
 /// - `0`: the process returned a non-zero exit code, or was terminated by a signal
 /// - `1`: the process exited normally
 ///
+/// You may optionally pass an `int` pointer to be set to the process' exit code. If the
+/// process did not return (i.e. another error occurred, the exit code is not set.
+///
 /// The provided `ProcessID` cannot be `INVALID_HANDLE`.
-CBA_DEF i32 proc_wait(ProcessID proc);
+CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code);
 
 CBA_DEF i32 __proc_wait_va(usize n, ...);
 
@@ -2827,7 +2835,7 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
 }
 
 
-CBA_DEF i32 proc_wait(ProcessID proc) {
+CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code) {
     i32 result = 1;
 
     cba_assert(proc != INVALID_HANDLE, "cannot wait on invalid process");
@@ -2840,6 +2848,10 @@ CBA_DEF i32 proc_wait(ProcessID proc) {
         if (GetExitCodeProcess(proc, &exit_status)) {
             if (exit_status != 0) {
                 result = 0;
+            }
+
+            if (exit_code) {
+                *exit_code = (int)exit_status;
             }
 
             CloseHandle(proc);
@@ -2868,6 +2880,10 @@ CBA_DEF i32 proc_wait(ProcessID proc) {
                 result = 0;
             }
 
+            if (exit_code) {
+                *exit_code = exit_status;
+            }
+
             break;
         }
 
@@ -2893,7 +2909,7 @@ CBA_DEF i32 __proc_wait_va(usize n, ...) {
 
     for (usize i = 0; i < n; ++i) {
         ProcessID arg = va_arg(args, ProcessID);
-        i32 r = proc_wait(arg);
+        i32 r = proc_wait(arg, NULL);
 
         if (r != 1) {
             result = r;
@@ -4996,7 +5012,7 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
         result = true;
     }
     else {
-        if (proc_wait(pid) == 1) {
+        if (proc_wait(pid, opts.exit_code) == 1) {
             result = true;
 
             if (opts.output_string) {
@@ -5013,6 +5029,9 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
                     opts.output_string->len = bytes_read;
                 }
             }
+        }
+        else if (opts.exit_code) {
+            *opts.exit_code = -1;
         }
     }
 

@@ -75,7 +75,7 @@
     - CBA_ALIGNMENT                   number of bytes to align allocations to
     - CBA_MIN_STRING_CAPACITY         minimum capacity for strings
     - CBA_MIN_ARRAY_CAPACITY          minimum capacity for string arrays and commands
-    - CBA_NO_DYNAMIC_ALLOCATION       whether to disable dynamic (re)allocation and use fixed lengths
+    - CBA_NO_DYNAMIC_ALLOCATION       whether to disable dynamic (re)allocation
 
 
     

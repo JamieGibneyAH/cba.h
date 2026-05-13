@@ -1108,8 +1108,9 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd);
 /// - `0`: the process returned a non-zero exit code, or was terminated by a signal
 /// - `1`: the process exited normally
 ///
-/// You may optionally pass an `int` pointer to be set to the process' exit code. If the
-/// process did not return (i.e. another error occurred, the exit code is not set.
+/// You may optionally pass an `int` pointer to be set to the process' exit code, or `1`
+/// if the process was signalled. If the process did not return (i.e. another error
+/// occurred and this function returns -1), the exit code is not set.
 ///
 /// The provided `ProcessID` cannot be `INVALID_HANDLE`.
 CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code);
@@ -2906,6 +2907,7 @@ CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code) {
     }
     else {
         verbose_print("failed to wait on child process: %s", _os_error());
+        result = -1;
     }
 #else
     for (;;) {
@@ -2934,6 +2936,11 @@ CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code) {
         if (WIFSIGNALED(wstatus)) {
             verbose_print("process with PID %d was terminated by signal %d", proc, WTERMSIG(wstatus));
             result = 0;
+
+            if (exit_code) {
+                *exit_code = 1;
+            }
+
             break;
         }
 
@@ -5056,7 +5063,9 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
         result = true;
     }
     else {
-        if (proc_wait(pid, opts.exit_code) == 1) {
+        i32 proc_result = proc_wait(pid, opts.exit_code);
+
+        if (proc_result == 1) {
             result = true;
 
             if (opts.output_string) {
@@ -5074,7 +5083,7 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
                 }
             }
         }
-        else if (opts.exit_code) {
+        else if (opts.exit_code && proc_result == -1) {
             *opts.exit_code = -1;
         }
     }

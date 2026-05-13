@@ -295,35 +295,6 @@
 #endif
 
 #ifndef CBA_NO_COLOR_OUTPUT
-// @todo: write these in terms of the ansi macros below to avoid duplicating them
-    #define print(s, ...)                                                                    \
-        printf("\x1b[1m%s:%04i\x1b[0m: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
-
-    #define cba_assert(cond, s, ...)                                                         \
-        if (!(cond)) {                                                                       \
-            fprintf(stderr,                                                                  \
-                    "\x1b[1m%s:%04i \x1b[31mfailed assertion\x1b[0m in %s: \"" s "\"\n",     \
-                    __FILE_NAME__,                                                           \
-                    __LINE__,                                                                \
-                    __FUNCTION__,                                                            \
-                    ## __VA_ARGS__);                                                         \
-            CBA_TRAP;                                                                        \
-        } (void)(0)
-    
-    #define cba_panic(s, ...)                                                                \
-        fprintf(stderr,                                                                      \
-                "\x1b[30;1m%s:%04i \x1b[31mpanic\x1b[0m in %s: \"" s "\"\n",                 \
-                __FILE_NAME__,                                                               \
-                __LINE__,                                                                    \
-                __FUNCTION__,                                                                \
-                ## __VA_ARGS__);                                                             \
-        CBA_TRAP
-
-    #define info(s, ...)  printf("[\x1b[1;32m" CBA_INFO_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
-    #define warn(s, ...)  printf("[\x1b[1;33m" CBA_WARN_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
-    #define error(s, ...) fprintf(stderr, "[\x1b[1;31m" CBA_ERROR_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
-    #define ping printf("\x1b[1;32mPING\x1b[0m @ %s in %s:\x1b[1m%04i\x1b[0m\n", __FILE_NAME__, __FUNCTION__, __LINE__)
-
     #define ANSI_BOLD(s)               "\x1b[1m"    s "\x1b[0m"
     #define ANSI_RED(s)                "\x1b[31m"   s "\x1b[0m"
     #define ANSI_GREEN(s)              "\x1b[32m"   s "\x1b[0m"
@@ -354,32 +325,6 @@
     #define ANSI_BOLD_BRIGHT_CYAN(s)   "\x1b[1;96m" s "\x1b[0m"
     #define ANSI_BOLD_BRIGHT_GRAY(s)   "\x1b[1;97m" s "\x1b[0m"
 #else
-    #define print(s, ...)                                                                    \
-        printf("%s:%04i: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
-
-    #define cba_assert(cond, s, ...)                                                             \
-        if (!(cond)) {                                                                       \
-            fprintf(stderr,                                                                  \
-                    "%s:%04i failed assertion: \"" s "\"\n",                                 \
-                    __FILE_NAME__,                                                           \
-                    __LINE__,                                                                \
-                    ## __VA_ARGS__);                                                         \
-            CBA_TRAP;                                                                        \
-        } (void)(0)
-    
-    #define cba_panic(s, ...)                                                                    \
-        fprintf(stderr,                                                                      \
-                "%s:%04i panic: \"" s "\"\n",                                                \
-                __FILE_NAME__,                                                               \
-                __LINE__,                                                                    \
-                ## __VA_ARGS__);                                                             \
-        CBA_TRAP
-
-    #define info(s, ...)  printf("[" CBA_INFO_PREFIX "] " s "\n", ## __VA_ARGS__)
-    #define warn(s, ...)  printf("[" CBA_WARN_PREFIX "] " s "\n", ## __VA_ARGS__)
-    #define error(s, ...) fprintf(stderr, "[" CBA_ERROR_PREFIX "] " s "\n", ## __VA_ARGS__)
-    #define ping printf("PING @ %s:%04i\n", __FILE_NAME__, __LINE__)
-
     #define ANSI_BOLD(s)               s
     #define ANSI_RED(s)                s
     #define ANSI_GREEN(s)              s
@@ -410,6 +355,34 @@
     #define ANSI_BOLD_BRIGHT_CYAN(s)   s
     #define ANSI_BOLD_BRIGHT_GRAY(s)   s
 #endif
+
+#define print(s, ...)                                                                    \
+    printf(ANSI_BOLD("%s:%04i") ": " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
+
+#define cba_assert(cond, s, ...)                                                         \
+    if (!(cond)) {                                                                       \
+        fprintf(stderr,                                                                  \
+                ANSI_BOLD("%s:%04i") ANSI_BOLD_RED(" failed assertion") " in %s: \"" s "\"\n",     \
+                __FILE_NAME__,                                                           \
+                __LINE__,                                                                \
+                __FUNCTION__,                                                            \
+                ## __VA_ARGS__);                                                         \
+        CBA_TRAP;                                                                        \
+    } (void)(0)
+
+#define cba_panic(s, ...)                                                                \
+    fprintf(stderr,                                                                      \
+            ANSI_BOLD("%s:%04i") ANSI_BOLD_RED(" panic") " in %s: \"" s "\"\n",                 \
+            __FILE_NAME__,                                                               \
+            __LINE__,                                                                    \
+            __FUNCTION__,                                                                \
+            ## __VA_ARGS__);                                                             \
+    CBA_TRAP
+
+#define info(s, ...)  printf("[" ANSI_BOLD_GREEN(CBA_INFO_PREFIX)  "] " s "\n", ## __VA_ARGS__)
+#define warn(s, ...)  printf("[" ANSI_BOLD_YELLOW(CBA_WARN_PREFIX) "] " s "\n", ## __VA_ARGS__)
+#define error(s, ...) fprintf(stderr, "[" ANSI_BOLD_RED(CBA_ERROR_PREFIX) "] " s "\n", ## __VA_ARGS__)
+#define ping printf(ANSI_BOLD_GREEN("PING") " @ %s in %s:" ANSI_BOLD("%04i") "\n", __FILE_NAME__, __FUNCTION__, __LINE__)
 
 #ifdef CBA_VERBOSE
     #define verbose_print(s, ...) print(s, ## __VA_ARGS__)

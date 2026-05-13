@@ -296,24 +296,27 @@
 #endif
 
 #ifndef CBA_NO_COLOR_OUTPUT
+// @todo: write these in terms of the ansi macros below to avoid duplicating them
     #define print(s, ...)                                                                    \
         printf("\x1b[1m%s:%04i\x1b[0m: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
 
     #define cba_assert(cond, s, ...)                                                         \
         if (!(cond)) {                                                                       \
             fprintf(stderr,                                                                  \
-                    "\x1b[1m%s:%04i \x1b[31mfailed assertion\x1b[0m: \"" s "\"\n",           \
+                    "\x1b[1m%s:%04i \x1b[31mfailed assertion\x1b[0m in %s: \"" s "\"\n",     \
                     __FILE_NAME__,                                                           \
                     __LINE__,                                                                \
+                    __FUNCTION__,                                                            \
                     ## __VA_ARGS__);                                                         \
             CBA_TRAP;                                                                        \
         } (void)(0)
     
     #define cba_panic(s, ...)                                                                \
         fprintf(stderr,                                                                      \
-                "\x1b[30;1m%s:%04i \x1b[31mpanic\x1b[0m: \"" s "\"\n",                          \
+                "\x1b[30;1m%s:%04i \x1b[31mpanic\x1b[0m in %s: \"" s "\"\n",                 \
                 __FILE_NAME__,                                                               \
                 __LINE__,                                                                    \
+                __FUNCTION__,                                                                \
                 ## __VA_ARGS__);                                                             \
         CBA_TRAP
 

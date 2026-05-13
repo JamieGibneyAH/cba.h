@@ -772,6 +772,10 @@ typedef u64 Version;
     *(patch) = ((version)      ) & 0xFFFFFFFFFFllu;                            \
   } while (0)
 
+#define version_get_maj(version)   (((version) >> 56) & 0xFFllu)
+#define version_get_min(version)   (((version) >> 40) & 0xFFFFllu)
+#define version_get_patch(version) (((version)      ) & 0xFFFFFFFFFFllu)
+
 // @mark: types
 
 /// A kind of file type.

@@ -324,6 +324,36 @@
     #define warn(s, ...)  printf("[\x1b[1;33m" CBA_WARN_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
     #define error(s, ...) fprintf(stderr, "[\x1b[1;31m" CBA_ERROR_PREFIX "\x1b[0m] " s "\n", ## __VA_ARGS__)
     #define ping printf("\x1b[1;32mPING\x1b[0m @ %s in %s:\x1b[1m%04i\x1b[0m\n", __FILE_NAME__, __FUNCTION__, __LINE__)
+
+    #define ANSI_BOLD(s)               "\x1b[1m"    s "\x1b[0m"
+    #define ANSI_RED(s)                "\x1b[31m"   s "\x1b[0m"
+    #define ANSI_GREEN(s)              "\x1b[32m"   s "\x1b[0m"
+    #define ANSI_YELLOW(s)             "\x1b[33m"   s "\x1b[0m"
+    #define ANSI_BLUE(s)               "\x1b[34m"   s "\x1b[0m"
+    #define ANSI_PURPLE(s)             "\x1b[35m"   s "\x1b[0m"
+    #define ANSI_CYAN(s)               "\x1b[36m"   s "\x1b[0m"
+    #define ANSI_GRAY(s)               "\x1b[37m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_RED(s)         "\x1b[91m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_GREEN(s)       "\x1b[92m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_YELLOW(s)      "\x1b[93m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_BLUE(s)        "\x1b[94m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_PURPLE(s)      "\x1b[95m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_CYAN(s)        "\x1b[96m"   s "\x1b[0m"
+    #define ANSI_BRIGHT_GRAY(s)        "\x1b[97m"   s "\x1b[0m"
+    #define ANSI_BOLD_RED(s)           "\x1b[1;31m" s "\x1b[0m"
+    #define ANSI_BOLD_GREEN(s)         "\x1b[1;32m" s "\x1b[0m"
+    #define ANSI_BOLD_YELLOW(s)        "\x1b[1;33m" s "\x1b[0m"
+    #define ANSI_BOLD_BLUE(s)          "\x1b[1;34m" s "\x1b[0m"
+    #define ANSI_BOLD_PURPLE(s)        "\x1b[1;35m" s "\x1b[0m"
+    #define ANSI_BOLD_CYAN(s)          "\x1b[1;36m" s "\x1b[0m"
+    #define ANSI_BOLD_GRAY(s)          "\x1b[1;37m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_RED(s)    "\x1b[1;91m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_GREEN(s)  "\x1b[1;92m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_YELLOW(s) "\x1b[1;93m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_BLUE(s)   "\x1b[1;94m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_PURPLE(s) "\x1b[1;95m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_CYAN(s)   "\x1b[1;96m" s "\x1b[0m"
+    #define ANSI_BOLD_BRIGHT_GRAY(s)   "\x1b[1;97m" s "\x1b[0m"
 #else
     #define print(s, ...)                                                                    \
         printf("%s:%04i: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
@@ -350,6 +380,36 @@
     #define warn(s, ...)  printf("[" CBA_WARN_PREFIX "] " s "\n", ## __VA_ARGS__)
     #define error(s, ...) fprintf(stderr, "[" CBA_ERROR_PREFIX "] " s "\n", ## __VA_ARGS__)
     #define ping printf("PING @ %s:%04i\n", __FILE_NAME__, __LINE__)
+
+    #define ANSI_BOLD(s)               s
+    #define ANSI_RED(s)                s
+    #define ANSI_GREEN(s)              s
+    #define ANSI_YELLOW(s)             s
+    #define ANSI_BLUE(s)               s
+    #define ANSI_PURPLE(s)             s
+    #define ANSI_CYAN(s)               s
+    #define ANSI_GRAY(s)               s
+    #define ANSI_BRIGHT_RED(s)         s
+    #define ANSI_BRIGHT_GREEN(s)       s
+    #define ANSI_BRIGHT_YELLOW(s)      s
+    #define ANSI_BRIGHT_BLUE(s)        s
+    #define ANSI_BRIGHT_PURPLE(s)      s
+    #define ANSI_BRIGHT_CYAN(s)        s
+    #define ANSI_BRIGHT_GRAY(s)        s
+    #define ANSI_BOLD_RED(s)           s
+    #define ANSI_BOLD_GREEN(s)         s
+    #define ANSI_BOLD_YELLOW(s)        s
+    #define ANSI_BOLD_BLUE(s)          s
+    #define ANSI_BOLD_PURPLE(s)        s
+    #define ANSI_BOLD_CYAN(s)          s
+    #define ANSI_BOLD_GRAY(s)          s
+    #define ANSI_BOLD_BRIGHT_RED(s)    s
+    #define ANSI_BOLD_BRIGHT_GREEN(s)  s
+    #define ANSI_BOLD_BRIGHT_YELLOW(s) s
+    #define ANSI_BOLD_BRIGHT_BLUE(s)   s
+    #define ANSI_BOLD_BRIGHT_PURPLE(s) s
+    #define ANSI_BOLD_BRIGHT_CYAN(s)   s
+    #define ANSI_BOLD_BRIGHT_GRAY(s)   s
 #endif
 
 #ifdef CBA_VERBOSE

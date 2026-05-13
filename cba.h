@@ -1888,7 +1888,7 @@ CBA_DEF b32 has_exe_in_path(const char* exe_name) {
     b32 result = false;
 
 #if CBA_WINDOWS
-    #error @todo: where.exe
+    result = cmd_try_run_direct(alloc_sprintf("where.exe /q '%s'", exe_name));
 #else
     result = cmd_try_run_direct(alloc_sprintf("which -s '%s'", exe_name));
 #endif

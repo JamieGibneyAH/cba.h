@@ -1030,8 +1030,8 @@ CBA_DEF b32 file_move(const char* path, const char* new_path);
 ///
 /// You can use `#if CBA_WINDOWS` or `#ifdef _WIN32` to check the platform.
 CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link);
-/// Deletes the file at `path`, returning true if the operation succeeded. If the file is
-/// a directory, its contents will be recursively deleted first.
+/// Deletes the file at `path`, returning true if the operation succeeded or if the file
+/// did not exist. If the file is a directory, its contents will be deleted recursively.
 CBA_DEF b32 file_delete(const char* path);
 /// Whether a file at `path` exists.
 CBA_DEF b32 file_exists(const char* path);
@@ -1156,6 +1156,8 @@ CBA_DEF String str_path_file_extension(String str);
 /// file path. If a root path couldn't be found, the returned string will be zeroed.
 CBA_DEF String str_path_pwd(String str);
 /// Returns a string containing an absolute path obtained from `str`.
+///
+/// This will expand relative paths such as `"../file"` or `"."`.
 CBA_DEF String str_path_to_absolute(String str);
 /// Attempts to split the provided file `path` string into all of its parent paths,
 /// starting with the root directory and ending with the parent directory of the file (if

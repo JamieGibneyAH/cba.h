@@ -88,8 +88,7 @@
     - The String type is always null-terminated UNLESS you take a "slice" of another string.
       You can use `str_to_cstr` or `str_copy` to allocate a null-terminated version.
 
-    - Consider using CBA_PATH_SEPARATOR in paths, OR prefer to use `/` which is
-      automatically converted on Windows where needed.
+    - Always prefer '/' characters as path separators.
 
 
 

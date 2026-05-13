@@ -802,9 +802,6 @@ struct Arena {
     usize used;
     /// The total number of bytes in the arena's memory block.
     usize capacity;
-    /// How many temporary memory blocks the arena is currently within, used for
-    /// debugging.
-    i32 temp_memory_pos;
 };
 typedef struct Arena Arena;
 
@@ -1002,11 +999,6 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size);
 #define alloc_bytes(count) (u8*)arena_alloc(&global_arena, (count))
 /// Allocates a `count` of elements of a `type`.
 #define alloc_array(count, type) (type*)arena_alloc(&global_arena, (count) * sizeof(type))
-
-/// Temporarily stores the current position of the global arena.
-#define begin_temp_memory() global_arena.temp_memory_pos += 1; usize __savepoint = global_arena.used
-/// Restores a previously-saved position of the global arena.
-#define end_temp_memory()   global_arena.temp_memory_pos -= 1; global_arena.used = __savepoint
 
 /// Returns a pointer to a null-terminated C-string created via a formatted string and
 /// optional arguments. The string is allocated via the global arena.
@@ -1616,7 +1608,6 @@ Arena global_arena = {
     .base = global_arena_memory_block,
     .used = 0,
     .capacity = CBA_MEMORY_BLOCK_SIZE,
-    .temp_memory_pos = 0,
 };
 
 #if CBA_WINDOWS

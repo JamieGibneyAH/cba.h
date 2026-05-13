@@ -1020,6 +1020,31 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size);
 /// optional arguments. The string is allocated via the global arena.
 CBA_DEF char* alloc_sprintf(const char* fmt, ...) PRINTF_FORMAT(1, 2);
 
+/// Returns a new copy of the provided `cstr` which is surrounded with double-quotes.
+///
+/// For example:
+/// ```
+/// const char* cstr = "hello world";
+/// surround_dq(cstr); // -> "hello world"
+/// ```
+CBA_DEF char* surround_dq(const char* cstr);
+/// Returns a new copy of the provided `cstr` which is surrounded with single-quotes.
+///
+/// For example:
+/// ```
+/// const char* cstr = "hello world";
+/// surround_dq(cstr); // -> 'hello world'
+/// ```
+CBA_DEF char* surround_sq(const char* cstr);
+/// Returns a new copy of the provided `cstr` which is surrounded with back-quotes.
+///
+/// For example:
+/// ```
+/// const char* cstr = "hello world";
+/// surround_dq(cstr); // -> `hello world`
+/// ```
+CBA_DEF char* surround_bq(const char* cstr);
+
 // @mark: files
 
 /// If any files in the `input_paths` array have been modified since the file at
@@ -1967,6 +1992,18 @@ CBA_DEF char* alloc_sprintf(const char* fmt, ...) {
     va_end(args);
 
     return result;
+}
+
+CBA_DEF char* surround_dq(const char* cstr) {
+    return alloc_sprintf("\"%s\"", cstr);
+}
+
+CBA_DEF char* surround_sq(const char* cstr) {
+    return alloc_sprintf("'%s'", cstr);
+}
+
+CBA_DEF char* surround_bq(const char* cstr) {
+    return alloc_sprintf("`%s`", cstr);
 }
 
 

@@ -1402,6 +1402,10 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
 // /// the "chopped" characters into `dest`. If `ch` was found, this function returns true.
 // CBA_DEF b32 str_chop_back_to_other(String* src, String* dest, String other, b32 case_sensitive);
 
+/// Returns a string of the current time, formatted as "HH:MM:SS" (24-hour time).
+CBA_DEF String str_from_current_time();
+/// Returns a string of the current date, formatted as "DD/MM/YYYY".
+CBA_DEF String str_from_current_date();
 /// Allocates and returns a null-terminated string containing the data of the provided string.
 CBA_DEF char* str_to_cstr(String str);
 
@@ -4070,6 +4074,34 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
             break;
         }
     }
+
+    return result;
+}
+
+CBA_DEF String str_from_current_time() {
+    String result = str_alloc_with_cap(32);
+
+#if CBA_WINDOWS
+    #error windows get current time
+#else
+    time_t now = time(0);
+    struct tm* t = localtime(&now);
+    result.len = (usize)strftime(result.data, 32, "%X", t);
+#endif
+
+    return result;
+}
+
+CBA_DEF String str_from_current_date() {
+    String result = str_alloc_with_cap(32);
+
+#if CBA_WINDOWS
+    #error windows get current date
+#else
+    time_t now = time(0);
+    struct tm* t = localtime(&now);
+    result.len = (usize)strftime(result.data, 32, "%d/%m/%Y", t);
+#endif
 
     return result;
 }

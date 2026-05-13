@@ -3082,7 +3082,7 @@ CBA_DEF String str_slice(String str, usize start, usize len) {
     String result = {
         .data = str.data + start,
         .len = len,
-        .cap = str.cap - len,
+        .cap = str.cap - start,
     };
 
     return result;
@@ -3093,12 +3093,14 @@ CBA_DEF void str_shrink_left(String* str, usize shift) {
 
     str->data += shift;
     str->len -= shift;
+    str->cap -= shift;
 }
 
 CBA_DEF void str_shrink_right(String* str, usize shift) {
     cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
     str->len -= shift;
+    str->cap -= shift;
 }
 
 CBA_DEF String str_path_file_name(String str, b32 include_extension) {
@@ -3110,14 +3112,16 @@ CBA_DEF String str_path_file_name(String str, b32 include_extension) {
 
     if (found_separator) {
         // @jcg: +1 because the separator shouldn't be included.
-        result.data += separator_pos + 1;
+        result.data = str.data + (separator_pos + 1);
         result.len  -= separator_pos + 1;
+        result.cap  -= separator_pos + 1;
     }
 
     if (!include_extension) {
         uninit usize dot_pos;
         if (str_find_last_char(str, '.', &dot_pos)) {
             result.len -= str.len - dot_pos;
+            result.cap -= str.len - dot_pos;
         }
     }
 
@@ -3129,8 +3133,9 @@ CBA_DEF String str_path_file_extension(String str) {
 
     uninit usize dot_pos;
     if (str_find_last_char(str, '.', &dot_pos)) {
-        result.data = str.data;
+        result.data = str.data + dot_pos;
         result.len = str.len - dot_pos;
+        result.cap = str.cap - dot_pos;
     }
 
     return result;
@@ -3144,8 +3149,9 @@ CBA_DEF String str_path_pwd(String str) {
                           str_find_last_char(str, '\\', &separator_pos);
 
     if (found_separator) {
-        result.data += separator_pos - 1;
+        result.data = str.data;
         result.len = separator_pos;
+        result.cap = str.cap - separator_pos - 1;
     }
 
     return result;
@@ -3158,6 +3164,8 @@ CBA_DEF String str_path_to_absolute(String str) {
 
 #if CBA_WINDOWS
     DWORD bytes = GetFullPathNameA(str.data, CBA_MAX_PATH, result.data, NULL);
+
+    // @todo: convert '/' to '\\'?
 
     if (!bytes) {
         verbose_print("failed to get absolute path name from " stok ": %s", sfmt(str), _os_error());
@@ -3176,10 +3184,8 @@ CBA_DEF String str_path_to_absolute(String str) {
         }
         else {
             // the path appears relative, so prepending the cwd should work.
-            {
-                String cwd = str_from_cwd();
-                str_append_other(&result, cwd);
-            }
+            String cwd = str_from_cwd();
+            str_append_other(&result, cwd);
 
             str_append_char(&result, CBA_PATH_SEPARATOR);
             str_append_other(&result, str);
@@ -3316,6 +3322,7 @@ CBA_DEF void str_appendf(String* str, const char* fmt, ...) {
 
     _str_resize(str, str->len + len + 1);
     vsnprintf(str->data + str->len, len + 1, fmt, args);
+    str->len += len;
 
     va_end(args);
 }
@@ -4228,7 +4235,8 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
                "other is too large for the source string (src len: %zu | other len: %zu)",
                src->len, other.len);
 
-    usize iters = src->len - other.len;
+    // @todo: case sensitive
+    CBA_UNUSED(case_sensitive);
 
     for (usize i = 0; i < src->len; ++i) {
         b32 matches = true;
@@ -4594,12 +4602,12 @@ CBA_DEF void cmd_append_str(Command* cmd, String str) {
         cmd->count = 0;
     }
 
-    assert(str.len, "cannot append empty string to command");
+    if (str.len) {
+        _cmd_resize(cmd, cmd->count + 1);
 
-    _cmd_resize(cmd, cmd->count + 1);
-
-    cmd->items[cmd->count] = str;
-    cmd->count += 1;
+        cmd->items[cmd->count] = str;
+        cmd->count += 1;
+    }
 }
 
 CBA_DEF void cmd_append_str_arr(Command* cmd, StringArray arr) {
@@ -4639,8 +4647,11 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
     String args_str = str_from_cstr(args);
     cba_assert(args_str.len > 0, "cannot split empty command");
 
+    String concat_arg = {0};
+
     i32 double_quote_pos = -1;
     i32 single_quote_pos = -1;
+    b32 last_char_was_space = false;
     usize next_append_pos = 0;
 
     for (usize i = 0; i < args_str.len; ++i) {
@@ -4650,6 +4661,11 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
                 cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, (usize)double_quote_pos + 1, len - 1);
 
+                if (concat_arg.len) {
+                    arg = str_sprintf("%.*s%.*s", sfmt(concat_arg), sfmt(arg));
+                    concat_arg.len = 0;
+                }
+
                 cmd_append_str(cmd, str_copy(arg));
                 next_append_pos = i + 1;
 
@@ -4658,6 +4674,14 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
             }
             else {
                 double_quote_pos = (i32)i;
+
+                if (!last_char_was_space) {
+                    usize len = i - next_append_pos;
+                    cba_assert(len != (usize)(-1), "incorrect length");
+                    concat_arg = str_slice(args_str, next_append_pos, len);
+
+                    next_append_pos = i + 1;
+                }
             }
         }
         else if (args_str.data[i] == '\'') {
@@ -4665,6 +4689,11 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
                 usize len = i - (usize)single_quote_pos;
                 cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, (usize)single_quote_pos + 1, len - 1);
+
+                if (concat_arg.len) {
+                    arg = str_sprintf("%.*s%.*s", sfmt(concat_arg), sfmt(arg));
+                    concat_arg.len = 0;
+                }
 
                 cmd_append_str(cmd, str_copy(arg));
                 next_append_pos = i + 1;
@@ -4674,6 +4703,14 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
             }
             else {
                 single_quote_pos = (i32)i;
+
+                if (!last_char_was_space) {
+                    usize len = i - next_append_pos;
+                    cba_assert(len != (usize)(-1), "incorrect length");
+                    concat_arg = str_slice(args_str, next_append_pos, len);
+
+                    next_append_pos = i + 1;
+                }
             }
         }
         else if (args_str.data[i] == ' ') {
@@ -4686,6 +4723,11 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
             }
 
             next_append_pos = i + 1;
+            last_char_was_space = true;
+        }
+
+        if (args_str.data[i] != ' ') {
+            last_char_was_space = false;
         }
     }
 
@@ -4789,30 +4831,47 @@ CBA_DEF String cmd_flatten(Command cmd) {
 CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim) {
     String result = {0};
 
-    // @jcg: starts with 1 to keep space for a null-terminator.
-    usize capacity = 1;
+    // // @jcg: starts with 1 to keep space for a null-terminator.
+    // usize capacity = 1;
+    //
+    // for (usize i = 0; i < cmd.count; ++i) {
+    //     // + 3 for space character and (possible) quotes.
+    //     capacity += cmd.items[i].cap + 3; 
+    // }
+    //
+    // result = str_alloc_with_cap(capacity);
 
     for (usize i = 0; i < cmd.count; ++i) {
-        // + 3 for space character and (possible) quotes.
-        capacity += cmd.items[i].cap + 3; 
-    }
-
-    result = str_alloc_with_cap(capacity);
-
-    for (usize i = 0; i < cmd.count; ++i) {
-        String* arg = &cmd.items[i];
+        String arg = cmd.items[i];
+        cba_assert(arg.len, "argument should not be empty");
 
         if (i != 0) {
             str_append_char(&result, ' ');
         }
 
-        if (!str_find_first_char(*arg, ' ', NULL)) {
-            str_append_other(&result, *arg);
+        if (!str_contains_char(arg, ' ')) {
+            str_append_other(&result, arg);
         }
         else {
-            str_append_char(&result, delim);
-            str_append_other(&result, *arg);
-            str_append_char(&result, delim);
+            // @todo: bit of a hack to avoid surrounding arguments which already contain
+            // the delimiter with more of that delimiter. Might want to implement
+            // something that checks for balanced delimiters, and perhaps whether the
+            // first delimiter is adjacent to a space or something...
+            if (delim == '"' && str_contains_char(result, '"')) {
+                str_append_char(&result, '\'');
+                str_append_other(&result, arg);
+                str_append_char(&result, '\'');
+            }
+            else if (delim == '\'' && str_contains_char(result, '\'')) {
+                str_append_char(&result, '"');
+                str_append_other(&result, arg);
+                str_append_char(&result, '"');
+            }
+            else {
+                str_append_char(&result, delim);
+                str_append_other(&result, arg);
+                str_append_char(&result, delim);
+            }
         }
     }
 

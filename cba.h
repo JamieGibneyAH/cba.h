@@ -2543,32 +2543,30 @@ CBA_INLINE b32 _create_dir(const char* path) {
 CBA_DEF b32 file_try_create_directory(const char* path) {
     b32 result = true;
 
-    {
-        String path_str = str_from_cstr(path);
+    String path_str = str_from_cstr(path);
 
-        if (!file_exists(path)) {
-            StringArray parent_paths = str_to_parent_paths(path_str);
+    if (!file_exists(path)) {
+        StringArray parent_paths = str_to_parent_paths(path_str);
 
-            if (parent_paths.items) {
-                for (usize i = 0; i < parent_paths.count; ++i) {
-                    char* path_cstr = (char*)str_to_cstr(parent_paths.items[i]);
-                    if (!_create_dir(path_cstr)) {
-                        result = false;
-                        break;
-                    }
-                }
-
-                // @jcg: the above only creates parent paths: the top-level dir still needs to
-                // be created.
-                if (result && !_create_dir((char*)path)) {
+        if (parent_paths.items) {
+            for (usize i = 0; i < parent_paths.count; ++i) {
+                char* path_cstr = (char*)str_to_cstr(parent_paths.items[i]);
+                if (!_create_dir(path_cstr)) {
                     result = false;
+                    break;
                 }
             }
+
+            // @jcg: the above only creates parent paths: the top-level dir still needs to
+            // be created.
+            if (result && !_create_dir((char*)path)) {
+                result = false;
+            }
         }
-        else {
-            verbose_print("directory \"%s\" already exists", path);
-            result = true;
-        }
+    }
+    else {
+        verbose_print("directory \"%s\" already exists", path);
+        result = true;
     }
 
     return result;

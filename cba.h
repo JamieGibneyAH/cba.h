@@ -1,5 +1,5 @@
 /*  
-    cba.h | v1.3.0 | https://github.com/jamiegibney/cba.h
+    cba.h | v1.4.0 | https://github.com/jamiegibney/cba.h
   
     Single-header library for build recipes and general utilities in C.
 
@@ -5177,6 +5177,10 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
 /*
     # Version history
 
+    - v1.4.0 (13 May 2026) (by @jamiegibney)
+        - Added an optional exit_code pointer to command options
+        - Arenas now support dynamic allocation of their memory blocks
+        - Updated the default alignment to 32 bytes
     - v1.3.0 (13 May 2026) (by @jamiegibney)
         - Reverted dynamic allocations to favour (inefficiently) reallocating via the global arena
         - Added new string functions

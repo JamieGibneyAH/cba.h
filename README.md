@@ -91,12 +91,11 @@ And when the source file is modified, the program will automatically rebuild its
 allocator, file operations, string operations, and more.
 
 - See the `alloc`, `alloc_bytes`, and `alloc_array` macros for allocating via the arena.
-- See `begin_temp_memory()` and `end_temp_memory()` for temporary arena allocations.
 - See the `str_*` functions for string operations.
 - See the `str_arr_*` functions for string arrays.
 - See the `file_*` functions for file operations.
-- See the `print`, `assert`, and `panic` macros for printing/assertions/panics.
-- See the `info`, `warn`, and `error` macros for user-facing logs.
+- See the `print`, `cba_assert`, and `cba_panic` macros for printing/assertions/panics.
+- See the `info`, `warn`, and `error` macros for pretty-printing to `stdout`.
 
 ## Todo
 

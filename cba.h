@@ -2482,10 +2482,10 @@ CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append) 
 
     uninit FILE* f;
     if (append) {
-        f = fopen(path, "wb");
+        f = fopen(path, "a+b");
     }
     else {
-        f = fopen(path, "ab");
+        f = fopen(path, "w+b");
     }
 
     if (f) {

@@ -1,5 +1,5 @@
 /*  
-    cba.h | v1.2.0 | https://github.com/jamiegibney/cba.h
+    cba.h | v1.3.0 | https://github.com/jamiegibney/cba.h
   
     Single-header library for build recipes and general utilities in C.
 
@@ -5110,6 +5110,26 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
 /*
     # Version history
 
+    - v1.3.0 (13 May 2026) (by @jamiegibney)
+        - Reverted dynamic allocations to favour (inefficiently) reallocating via the global arena
+        - Added new string functions
+        - Added surround_ functions for creating C-strings surrounded in quotes
+        - Added has_exe_in_path (i.e. "which" or "where.exe" commands)
+        - Added functions for obtaining information from git
+        - Added Levenshtein distance functions
+        - Added new endianness functions
+        - Added fmt_binary functions for formatting binary strings
+        - Added ANSI_ macros for ANSI escape codes
+        - Added version_get_ macros for getting singular version fields
+        - Added cba_ prefix to the assert and panic macros
+        - Updated printing macros
+        - Updated high/low bitmasks
+        - Files are now always flushed directly after writing to them
+        - Removed begin/end temporary memory macros and calls to avoid some bugs
+        - CBA_REBUILD_COMMAND is now implemented in terms of CBA_COMPIER_ macros
+        - Fixed cmd_try_run_direct
+        - Fixed fmt_time function
+        - Various bug fixes
     - v1.2.0 (01 May 2026) (by @jamiegibney)
         - Strings, StringArrays, and Commands now support dynamic allocation by default
         - Added `CBA_NO_DYNAMIC_ALLOCATION` to opt out of dynamically-allocated strings and arrays

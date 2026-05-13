@@ -1449,6 +1449,14 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
 CBA_DEF String str_from_current_time();
 /// Returns a string of the current date, formatted as "DD/MM/YYYY".
 CBA_DEF String str_from_current_date();
+
+/// Returns the Levenshtein distance between strings `a` and `b`, which is the number of
+/// changes required to convert one string into the other.
+CBA_DEF usize str_levenshtein_distance(String a, String b);
+/// Returns a similarity from `0.0` to `1.0` of the strings `a` and `b` using a
+/// Levenshtein distance algorithm.
+CBA_DEF f32 str_levenshtein_similarity(String a, String b);
+
 /// Allocates and returns a null-terminated string containing the data of the provided string.
 CBA_DEF char* str_to_cstr(String str);
 
@@ -4289,6 +4297,53 @@ CBA_DEF String str_from_current_date() {
     struct tm* t = localtime(&now);
     result.len = (usize)strftime(result.data, 32, "%d/%m/%Y", t);
 #endif
+
+    return result;
+}
+
+CBA_DEF usize str_levenshtein_distance(String a, String b) {
+    usize result = 0;
+
+    if (!a.len) {
+        result = b.len;
+    }
+    else if (!b.len) {
+        result = a.len;
+    }
+    else {
+        usize* v0 = alloc_array(b.len + 1, usize);
+        usize* v1 = alloc_array(b.len + 1, usize);
+
+        for (usize i = 0; i < (b.len + 1); ++i) {
+            v0[i] = i;
+        }
+
+        for (usize i = 0; i < a.len; ++i) {
+            v1[0] = i + 1;
+
+            for (usize ii = 0; ii < b.len; ++ii) {
+                usize cost = (a.data[i] == b.data[ii]) ? 0 : 1;
+                v1[ii + 1] = min(v1[ii] + 1, min(v0[ii + 1] + 1, v0[ii] + cost));
+            }
+
+            memcpy(v0, v1, (b.len + 1) * sizeof(usize));
+        }
+
+        result = v1[b.len];
+    }
+
+    return result;
+}
+
+CBA_DEF f32 str_levenshtein_similarity(String a, String b) {
+    f32 result = 0.0f;
+
+    if (a.len && b.len) {
+        usize distance = str_levenshtein_distance(a, b);
+        usize max_len = max(a.len, b.len);
+
+        result = 1.0f - ((f32)(distance) / (f32)(max_len));
+    }
 
     return result;
 }

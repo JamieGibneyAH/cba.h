@@ -2498,6 +2498,7 @@ CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append) 
             result = true;
         }
 
+        fflush(f);
         fclose(f);
     }
     else {
@@ -3067,6 +3068,7 @@ CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append) {
             result = true;
         }
 
+        fflush(f);
         fclose(f);
     }
     else {

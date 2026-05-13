@@ -1,11 +1,9 @@
 # `cba.h`
 
-This is a [stb-style](https://github.com/nothings/stb) header-only library
-designed for writing build recipes in C and useful C utilities.
+A single-header library for build recipes and general utilities in C.
 
-It's largely based on tsoding's [nob.h
-library](https://github.com/tsoding/nob.h) — a wonderful alternative for the
-'use C to build C' approach.
+This is largely based on tsoding's [nob.h library](https://github.com/tsoding/nob.h)
+— a wonderful alternative for the 'use C to build C' approach.
 
 Grab `cba.h` directly with:
 

@@ -2656,9 +2656,7 @@ static inline String _cmd_flatten_win32(Command cmd) {
         capacity += cmd.items[i].cap; 
     }
 
-    // @jcg: it's hard to know without counting how many backslashes there might be, so
-    // it's easier to just double the minimum capacity.
-    // @todo: perhaps actually counting so this never runs out of capacity would be wise?
+    // @todo: no longer needed?
     result = str_alloc_with_cap(capacity * 2);
 
     for (usize i = 0; i < cmd.count; ++i) {

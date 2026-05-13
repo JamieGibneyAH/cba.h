@@ -909,12 +909,19 @@ typedef struct Command Command;
 #define streq(a, b)  (strcmp(a, b) == 0)
 #define strneq(a, b) (strcmp(a, b) != 0)
 
+#define endian_swap_16(x) ((((x) & 0xff00) >> 8) | (((x) & 0x00ff) << 8))
 #define endian_swap_32(x) (((x) >> 24) | (((x) & 0x00ff0000) >> 8) | (((x) & 0x0000ff00) << 8) | ((x) << 24))
 #define endian_swap_64(x)                                                                \
     ((((x) >> 56) & 0x00000000000000ff) | (((x) >> 40) & 0x000000000000ff00) |           \
      (((x) >> 24) & 0x0000000000ff0000) | (((x) >> 8)  & 0x00000000ff000000) |           \
      (((x) << 8)  & 0x000000ff00000000) | (((x) << 24) & 0x0000ff0000000000) |           \
      (((x) << 40) & 0x00ff000000000000) | (((x) << 56) & 0xff00000000000000))
+
+#if CBA_64_BIT
+    #define endian_swap_usize(x) endian_swap_64(x)
+#else
+    #define endian_swap_usize(x) endian_swap_32(x)
+#endif
 
 #if CBA_MSVC
     #define CBA_COMPILER_C "cl.exe"
@@ -962,6 +969,9 @@ CBA_DEF void wait_ms(u64 ms);
 
 /// Swaps `len_bytes` bytes between the memory at `a` and `b`.
 CBA_DEF void mem_swap(void* a, void* b, usize len_bytes);
+
+/// Whether the current system is little-endian or not.
+CBA_DEF b32 is_little_endian();
 
 /// Returns the next power of two value for `x`.
 CBA_DEF usize next_pow2(usize x);
@@ -1782,6 +1792,11 @@ CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
         lhs += 1;
         rhs += 1;
     }
+}
+
+CBA_DEF b32 is_little_endian() {
+    u16 x = 1;
+    return *((u8*)&x);
 }
 
 CBA_DEF usize next_pow2(usize x) {

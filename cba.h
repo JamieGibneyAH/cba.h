@@ -1,5 +1,5 @@
 /*  
-    cba.h | v1.4.0 | https://github.com/jamiegibney/cba.h
+    cba.h | v1.4.1 | https://github.com/jamiegibney/cba.h
   
     Single-header library for build recipes and general utilities in C.
 
@@ -1994,7 +1994,6 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size) {
 
     if ((arena->used + effective_size) > arena->capacity) {
         if (!arena->min_block_size) {
-        ping;
             arena->min_block_size = CBA_MEMORY_BLOCK_SIZE;
             cba_assert(is_pow2(CBA_ALIGNMENT), "CBA_ALIGNMENT is not a power-of-two value");
         }
@@ -5186,6 +5185,8 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
 /*
     # Version history
 
+    - v1.4.1 (13 May 2026) (by @jamiegibney)
+        - Fixed an issue where exit code values might be overwritten or not set
     - v1.4.0 (13 May 2026) (by @jamiegibney)
         - Added an optional exit_code pointer to command options
         - Arenas now support dynamic allocation of their memory blocks

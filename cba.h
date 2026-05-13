@@ -4090,6 +4090,7 @@ CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
     const u64 MILLI = 1000000;
     const u64 SEC   = 1000000000;
     const u64 MIN   = 60000000000;
+    const u64 HOUR  = 360000000000;
 
     if (nanos < MICRO) {
         const char* unit = verbosity == 0 ? "ns" : (verbosity == 1 ? "nanos" : "nanoseconds");
@@ -4107,9 +4108,13 @@ CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
         const char* unit = verbosity == 0 ? "s" : (verbosity == 1 ? "secs" : "seconds");
         result = alloc_sprintf("%.3lf %s", (f64)nanos * 1e-9, unit);
     }
-    else {
+    else if (nanos < HOUR) {
         const char* unit = verbosity == 0 ? "m" : (verbosity == 1 ? "mins" : "minutes");
-        result = alloc_sprintf("%.3lf %s", (f64)nanos * (60.0 * 1e-9), unit);
+        result = alloc_sprintf("%.3lf %s", (f64)nanos * (1e-9 / 60.0), unit);
+    }
+    else {
+        const char* unit = verbosity == 0 ? "h" : (verbosity == 1 ? "hrs" : "hours");
+        result = alloc_sprintf("%.3lf %s", (f64)nanos * (1e-9 / 360.0), unit);
     }
 
     return result;

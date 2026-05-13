@@ -1415,6 +1415,23 @@ CBA_DEF char* str_to_cstr(String str);
 /// `56324857 -> "53.716 MB"`
 CBA_DEF char* fmt_bytes(usize num_bytes);
 
+/// Creates a formatted string of the provided `u8` as binary.
+///
+/// The result is always in big-endian.
+CBA_DEF char* fmt_binary8(u8 b);
+/// Creates a formatted string of the provided `u16` as binary.
+///
+/// The result is always in big-endian.
+CBA_DEF char* fmt_binary16(u16 b);
+/// Creates a formatted string of the provided `u32` as binary.
+///
+/// The result is always in big-endian.
+CBA_DEF char* fmt_binary32(u32 b);
+/// Creates a formatted string of the provided `u64` as binary.
+///
+/// The result is always in big-endian.
+CBA_DEF char* fmt_binary64(u64 b);
+
 /// Returns a formatted pretty string of the amount of time represented by `nanos`.
 ///
 /// `verbosity` describes how verbose units are:
@@ -4091,6 +4108,41 @@ CBA_DEF char* fmt_bytes(usize num_bytes) {
     }
 
     return result;
+}
+
+CBA_DEF char* _fmt_binary(u64 value, usize width) {
+    char* result = alloc_array(width + 1 + (width / 8), char);
+
+    usize pos = 0;
+
+    for (usize i = 0; i < width; ++i) {
+        if ((i % 8 == 0) && (i != width - 1)) {
+            result[pos] = ' ';
+            pos += 1;
+        }
+
+        result[pos] = ((value >> ((width - 1) - i)) & BIT1) + '0';
+
+        pos += 1;
+    }
+
+    return result;
+}
+
+CBA_DEF char* fmt_binary8(u8 b) {
+    return _fmt_binary(b, 8);
+}
+
+CBA_DEF char* fmt_binary16(u16 b) {
+    return _fmt_binary(b, 16);
+}
+
+CBA_DEF char* fmt_binary32(u32 b) {
+    return _fmt_binary(b, 32);
+}
+
+CBA_DEF char* fmt_binary64(u64 b) {
+    return _fmt_binary(b, 64);
 }
 
 CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {

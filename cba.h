@@ -2797,10 +2797,7 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
 
                 if (exec_result >= 0) {
                     result = (ProcessID)cpid;
-
-                    {
-                        verbose_print("spawned process from \"%s\"", cmd_flatten_to_cstr(cmd));
-                    }
+                    verbose_print("spawned process from \"%s\"", cmd_flatten_to_cstr(cmd));
                 }
                 else {
                     verbose_print("failed to exec child process for \"%s\": %s", arr[0], _os_error());

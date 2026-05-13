@@ -122,7 +122,7 @@
 
 /// Number of bytes to align arena allocations to.
 #ifndef CBA_ALIGNMENT
-    #define CBA_ALIGNMENT (64)
+    #define CBA_ALIGNMENT (32)
 #elif CBA_ALIGNMENT == 0
     #error memory alignment must be greater than 0
 #endif

@@ -35,7 +35,7 @@
         CBA_REBUILD(argc, argv);
 
         // Create a directory (also works recursively).
-        assert(file_try_create_directory("build"), "failed to create build directory");
+        wf_assert(file_try_create_directory("build"), "failed to create build directory");
 
         // An array of arguments which can be run like a shell command.
         Command cmd = {0};
@@ -295,18 +295,11 @@
     #define CBA_ERROR_PREFIX "error"
 #endif
 
-#ifdef assert
-    #undef assert
-#endif
-#ifdef error
-    #undef error
-#endif
-
 #ifndef CBA_NO_COLOR_OUTPUT
     #define print(s, ...)                                                                    \
         printf("\x1b[1m%s:%04i\x1b[0m: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
 
-    #define assert(cond, s, ...)                                                             \
+    #define cba_assert(cond, s, ...)                                                         \
         if (!(cond)) {                                                                       \
             fprintf(stderr,                                                                  \
                     "\x1b[1m%s:%04i \x1b[31mfailed assertion\x1b[0m: \"" s "\"\n",           \
@@ -316,7 +309,7 @@
             CBA_TRAP;                                                                        \
         } (void)(0)
     
-    #define panic(s, ...)                                                                    \
+    #define cba_panic(s, ...)                                                                \
         fprintf(stderr,                                                                      \
                 "\x1b[30;1m%s:%04i \x1b[31mpanic\x1b[0m: \"" s "\"\n",                          \
                 __FILE_NAME__,                                                               \
@@ -332,7 +325,7 @@
     #define print(s, ...)                                                                    \
         printf("%s:%04i: " s "\n", __FILE_NAME__, __LINE__, ## __VA_ARGS__)
 
-    #define assert(cond, s, ...)                                                             \
+    #define cba_assert(cond, s, ...)                                                             \
         if (!(cond)) {                                                                       \
             fprintf(stderr,                                                                  \
                     "%s:%04i failed assertion: \"" s "\"\n",                                 \
@@ -342,7 +335,7 @@
             CBA_TRAP;                                                                        \
         } (void)(0)
     
-    #define panic(s, ...)                                                                    \
+    #define cba_panic(s, ...)                                                                    \
         fprintf(stderr,                                                                      \
                 "%s:%04i panic: \"" s "\"\n",                                                \
                 __FILE_NAME__,                                                               \
@@ -362,8 +355,8 @@
     #define verbose_print(s, ...)
 #endif
 
-#define todo() panic("TODO: %s", __PRETTY_FUNCTION__)
-#define unreachable() CBA_UNREACHABLE; panic("unreachable code path was hit")
+#define todo() cba_panic("TODO: %s", __PRETTY_FUNCTION__)
+#define unreachable() CBA_UNREACHABLE; cba_panic("unreachable code path was hit")
 
 #define CBA_DEF static inline
 
@@ -1435,10 +1428,10 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts);
     cmd_try_run_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ })
 
 /// Runs the provided command with default options, and asserts that the command succeeds.
-#define cmd_run(cmd, ...)                                                                \
-    assert(cmd_try_run_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ }),    \
-           "failed to run command `%.*s`",                                               \
-           sfmt(cmd_flatten(cmd)))
+#define cmd_run(cmd, ...)                                                                 \
+    cba_assert(cmd_try_run_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ }), \
+               "failed to run command `%.*s`",                                            \
+               sfmt(cmd_flatten(cmd)))
 
 /// Runs the whole `command` with the provided options.
 ///
@@ -1460,10 +1453,10 @@ CBA_DEF b32 cmd_try_run_direct_with_opts(const char* command, CommandOptions opt
 /// Runs the whole `command` with default options, and asserts that the commands suceeds.
 ///
 /// Arguments surrounded by either `'` or `"` characters are treated as whole arguments.
-#define cmd_run_direct(cmd, ...)                                                         \
-    assert(cmd_try_run_direct_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ }),        \
-           "failed to run command `%s`",                                                 \
-           cmd)
+#define cmd_run_direct(cmd, ...)                                                                 \
+    cba_assert(cmd_try_run_direct_with_opts((cmd), CBA_LITERAL(CommandOptions) { __VA_ARGS__ }), \
+               "failed to run command `%s`",                                                     \
+               cmd)
 
 /// Concatenates all arguments in a command into a string using spaces.
 ///
@@ -1500,7 +1493,7 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
             }                                                                                                     \
             (arr)->cap = next_pow2(new_cap);                                                                      \
             (arr)->items = _DECLTYPE_CAST((arr)->items)realloc((arr)->items, (arr)->cap * sizeof(*(arr)->items)); \
-            assert((arr)->items, "failed to reallocate %zu elements for dynamic array", (arr)->cap);              \
+            cba_assert((arr)->items, "failed to reallocate %zu elements for dynamic array", (arr)->cap);          \
         }                                                                                                         \
     } while (0)
 #define da_append(arr, element)                   \
@@ -1668,8 +1661,8 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
 #if defined(CBA_PRINT_ON_REBUILD) || defined(CBA_VERBOSE)
                 error("%s", CBA_REBUILD_FAILED_MESSAGE(binary_path_cstr));
 #endif
-                assert(file_move(old_binary_path_cstr, binary_path_cstr),
-                       "failed to move old binary back to the current one");
+                cba_assert(file_move(old_binary_path_cstr, binary_path_cstr),
+                           "failed to move old binary back to the current one");
                 exit_code = 1;
             }
         }
@@ -1688,8 +1681,8 @@ CBA_DEF u64 nanos_now(void) {
 
 #if CBA_WINDOWS
     uninit LARGE_INTEGER freq, counter;
-    assert(QueryPerformanceFrequency(&freq), "failed to obtain performance counter frequency");
-    assert(QueryPerformanceCounter(&counter), "failed to obtain performance counter");
+    cba_assert(QueryPerformanceFrequency(&freq), "failed to obtain performance counter frequency");
+    cba_assert(QueryPerformanceCounter(&counter), "failed to obtain performance counter");
 
     result = counter.QuadPart * (1000000000 / freq.QuadPart);
 #else
@@ -1767,9 +1760,9 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size) {
 
     usize effective_size = size + alignment_offset;
 
-    assert((arena->used + effective_size) <= arena->capacity,
-           "arena overflowed its memory block (capacity: %zu, used: %zu, allocating: %zu)",
-           arena->capacity, arena->used, effective_size);
+    cba_assert((arena->used + effective_size) <= arena->capacity,
+               "arena overflowed its memory block (capacity: %zu, used: %zu, allocating: %zu)",
+               arena->capacity, arena->used, effective_size);
 
     result = arena->base + arena->used + alignment_offset;
     arena->used += effective_size;
@@ -1785,11 +1778,11 @@ CBA_DEF char* alloc_sprintf(const char* fmt, ...) {
     va_start(args, fmt);
 
     int len = vsnprintf(NULL, 0, fmt, args);
-    assert(len > 0, "failed to construct format string from \"%s\"", fmt);
+    cba_assert(len > 0, "failed to construct format string from \"%s\"", fmt);
 
     result = alloc_array(len + 1, char);
     vsnprintf(result, len + 1, fmt, args);
-    assert(result[len] == '\0', "null-terminator was not appended");
+    cba_assert(result[len] == '\0', "null-terminator was not appended");
 
     va_end(args);
 
@@ -1851,11 +1844,11 @@ static inline void _close_fd(FileDescriptor fd) {
 static usize _seek_fd(FileDescriptor fd, b32 end) {
     usize result = 0;
 
-    assert(fd != INVALID_HANDLE, "cannot seek with an invalid file descriptor");
+    cba_assert(fd != INVALID_HANDLE, "cannot seek with an invalid file descriptor");
 
 #if CBA_WINDOWS
     DWORD pos = SetFilePointer(fd, 0, NULL, end ? FILE_END : FILE_BEGIN);
-    assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file: %s", _os_error());
+    cba_assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file: %s", _os_error());
     result = (usize)pos;
 #else
     result = (usize)lseek(fd, 0, end ? SEEK_END : SEEK_SET);
@@ -2115,7 +2108,7 @@ CBA_DEF b32 file_delete(const char* path) {
     if (file_exists(path)) {
         FileKind ft = file_get_kind(path);
 
-        assert(ft != FILE_KIND_UNKNOWN, "the file exists, so its type should have been recognised");
+        cba_assert(ft != FILE_KIND_UNKNOWN, "the file exists, so its type should have been recognised");
 
         if (ft == FILE_KIND_DIRECTORY) {
             int r = nftw(path, _rment, 512, FTW_PHYS | FTW_DEPTH);
@@ -2224,8 +2217,8 @@ CBA_DEF usize file_length(const char* path) {
 CBA_DEF b32 file_read(const char* path, void* dest, usize bytes) {
     b32 result = false;
 
-    assert(dest, "cannot read to NULL memory");
-    assert(bytes, "cannot read zero bytes");
+    cba_assert(dest, "cannot read to NULL memory");
+    cba_assert(bytes, "cannot read zero bytes");
 
     FILE* f = fopen(path, "rb");
 
@@ -2251,8 +2244,8 @@ CBA_DEF b32 file_read(const char* path, void* dest, usize bytes) {
 CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append) {
     b32 result = false;
 
-    assert(memory, "cannot write from NULL memory");
-    assert(bytes, "cannot write zero bytes");
+    cba_assert(memory, "cannot write from NULL memory");
+    cba_assert(bytes, "cannot write zero bytes");
 
     uninit FILE* f;
     if (append) {
@@ -2303,7 +2296,7 @@ CBA_INLINE b32 _create_dir(const char* path) {
         int res = mkdir(path, 0755);
 
         if (res < 0) {
-            assert(errno != EEXIST, "the file should not exist, because it has already been checked");
+            cba_assert(errno != EEXIST, "the file should not exist, because it has already been checked");
             verbose_print("failed to create directory \"%s\": %s", path, _os_error());
             result = false;
         }
@@ -2352,10 +2345,10 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 
     String path_str = str_from_cstr(path);
 
-    assert(path_str.data[path_str.len] == '\0', "path string is not null-terminated");
+    cba_assert(path_str.data[path_str.len] == '\0', "path string is not null-terminated");
 
     FileKind ft = file_get_kind(path);
-    assert(ft == FILE_KIND_DIRECTORY, "the path \"%s\" is not a directory", path);
+    cba_assert(ft == FILE_KIND_DIRECTORY, "the path \"%s\" is not a directory", path);
 
 #if CBA_WINDOWS
     uninit WIN32_FIND_DATA find_data;
@@ -2399,7 +2392,7 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
     }
 #else
     DIR* d = opendir(path);
-    assert(d, "failed to open dir \"%s\": %s", path, _os_error());
+    cba_assert(d, "failed to open dir \"%s\": %s", path, _os_error());
 
     struct dirent* dent = NULL;
 
@@ -2454,7 +2447,7 @@ static inline String _cmd_flatten_win32(Command cmd) {
 
     for (usize i = 0; i < cmd.count; ++i) {
         String* arg = &cmd.items[i];
-        assert(arg->len, "argument should not be empty");
+        cba_assert(arg->len, "argument should not be empty");
 
         if (i != 0) {
             str_append_char(&result, ' ');
@@ -2538,8 +2531,6 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
         verbose_print("failed to create process: %s", _os_error());
     }
 #else
-    assert(global_arena.temp_memory_pos == 0, "cannot spawn new process in a temporary memory block");
-
     if (cmd.count >= 1) {
         pid_t cpid = fork();
 
@@ -2598,7 +2589,7 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
 CBA_DEF i32 proc_wait(ProcessID proc) {
     i32 result = 1;
 
-    assert(proc != INVALID_HANDLE, "cannot wait on invalid process");
+    cba_assert(proc != INVALID_HANDLE, "cannot wait on invalid process");
 
 #if CBA_WINDOWS
     DWORD res = WaitForSingleObject(proc, INFINITE);
@@ -2688,10 +2679,6 @@ CBA_DEF void _str_resize(String* str, usize new_len) {
         str->cap = new_len;
     }
 
-    assert(new_len < str->cap,
-           "string capacity was exceeded (capacity: %zu, new length: %zu)",
-           str->cap,
-           new_len);
 }
 #else
 CBA_DEF void _str_resize(String* str, usize new_len) {
@@ -2738,7 +2725,7 @@ CBA_DEF String str_sprintf(const char* fmt, ...) {
     va_start(args, fmt);
 
     int len = vsnprintf(NULL, 0, fmt, args);
-    assert(len > 0, "failed to construct format string from \"%s\"", fmt);
+    cba_assert(len > 0, "failed to construct format string from \"%s\"", fmt);
 
     // @jcg: in a nutshell, vsnprintf returns the length minus a null-terminator when used
     // as above, but will append a null-terminator anyway when used as below - hence the
@@ -2779,7 +2766,7 @@ CBA_DEF String str_from_file(const char* file_path) {
     String result = {0};
 
     FILE* f = fopen(file_path, "rb");
-    assert(f, "failed to open file \"%s\" for reading", file_path);
+    cba_assert(f, "failed to open file \"%s\" for reading", file_path);
 
     fseek(f, 0, SEEK_END);
     usize len = (usize)ftell(f);
@@ -2790,7 +2777,7 @@ CBA_DEF String str_from_file(const char* file_path) {
         result.len = len;
 
         usize bytes_read = (usize)fread(result.data, 1, len, f);
-        assert(bytes_read > 0, "no bytes were read from \"%s\"", file_path);
+        cba_assert(bytes_read > 0, "no bytes were read from \"%s\"", file_path);
     }
 
     fclose(f);
@@ -2807,7 +2794,7 @@ CBA_DEF String str_from_cwd(void) {
     char* cwd = getcwd(result.data, CBA_MAX_PATH);
 #endif
 
-    assert(cwd, "failed to obtain current working directory");
+    cba_assert(cwd, "failed to obtain current working directory");
 
     result.len = (usize)strlen(cwd);
 
@@ -2839,9 +2826,9 @@ CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append) {
 }
 
 CBA_DEF String str_slice(String str, usize start, usize len) {
-    assert((start + len) <= str.len,
-           "string slice exceeds the string's length (start: %zu, len: %zu, string len: %zu)",
-           start, len, str.len);
+    cba_assert((start + len) <= str.len,
+               "string slice exceeds the string's length (start: %zu, len: %zu, string len: %zu)",
+               start, len, str.len);
 
     String result = {
         .data = str.data + start,
@@ -2853,14 +2840,14 @@ CBA_DEF String str_slice(String str, usize start, usize len) {
 }
 
 CBA_DEF void str_shrink_left(String* str, usize shift) {
-    assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
+    cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
     str->data += shift;
     str->len -= shift;
 }
 
 CBA_DEF void str_shrink_right(String* str, usize shift) {
-    assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
+    cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
     str->len -= shift;
 }
@@ -2918,7 +2905,7 @@ CBA_DEF String str_path_pwd(String str) {
 CBA_DEF String str_path_to_absolute(String str) {
     String result = str_alloc_with_cap(CBA_MAX_PATH);
 
-    assert(str.data[str.len] == '\0', "string is not null-terminated");
+    cba_assert(str.data[str.len] == '\0', "string is not null-terminated");
 
 #if CBA_WINDOWS
     DWORD bytes = GetFullPathNameA(str.data, CBA_MAX_PATH, result.data, NULL);
@@ -2929,7 +2916,7 @@ CBA_DEF String str_path_to_absolute(String str) {
         str_copy_into(&result, str);
     }
 #else
-    assert(str.len < CBA_MAX_PATH, "input path length exceeds PATH_MAX");
+    cba_assert(str.len < CBA_MAX_PATH, "input path length exceeds PATH_MAX");
 
     char* p = realpath(str.data, result.data);
 
@@ -2964,7 +2951,7 @@ CBA_DEF StringArray str_to_parent_paths(String path) {
     //
     // "some_dir_name/subdir/file.txt" -> { "some_dir_name", "some_dir_name/subdir" }
 
-    assert(path.len > 0, "cannot convert an empty path to its parents");
+    cba_assert(path.len > 0, "cannot convert an empty path to its parents");
 
     b32 last_was_separator = false;
 
@@ -3076,7 +3063,7 @@ CBA_DEF void str_appendf(String* str, const char* fmt, ...) {
     va_start(args, fmt);
 
     int len = vsnprintf(NULL, 0, fmt, args);
-    assert(len > 0, "failed to construct format string from \"%s\"", fmt);
+    cba_assert(len > 0, "failed to construct format string from \"%s\"", fmt);
 
     _str_resize(str, str->len + len + 1);
     vsnprintf(str->data + str->len, len + 1, fmt, args);
@@ -3103,12 +3090,12 @@ CBA_DEF void str_to_upper(String* str) {
 CBA_DEF void str_lshift(String* str, usize start, usize shift) {
     if (!shift) return;
 
-    assert(start <= str->len,
-           "shift start is outside of the string (start: %zu, len: %zu)",
-           start, str->len);
-    assert(0 < start && shift <= start,
-           "string should would underflow (start: %zu, shift: %zu)",
-           start, shift);
+    cba_assert(start <= str->len,
+               "shift start is outside of the string (start: %zu, len: %zu)",
+               start, str->len);
+    cba_assert(0 < start && shift <= start,
+               "string should would underflow (start: %zu, shift: %zu)",
+               start, shift);
 
     for (usize i = start; i < str->len; ++i) {
         str->data[i - shift] = str->data[i];
@@ -3122,12 +3109,11 @@ CBA_DEF void str_lshift(String* str, usize start, usize shift) {
 CBA_DEF void str_rshift(String* str, usize start, usize shift) {
     if (!shift) return;
 
-    assert(start <= str->len,
-           "shift start is outside of the string (start: %zu, len: %zu)",
-           start, str->len);
-    assert((str->len + shift) <= str->cap,
-           "string shift would overflow (len: %zu, shift: %zu, cap: %zu)",
-           str->len, shift, str->cap);
+    cba_assert(start <= str->len,
+               "shift start is outside of the string (start: %zu, len: %zu)",
+               start, str->len);
+
+    _str_resize(str, str->len + shift);
 
     usize new_len = str->len + shift;
     usize end = start + shift;
@@ -3157,13 +3143,13 @@ CBA_DEF void str_insert_cstr(String* str, usize at, const char* cstr) {
 }
 
 CBA_DEF void str_remove(String* str, usize at) {
-    assert(str->len > 0, "tried to remove from an empty string (zero length)");
+    cba_assert(str->len > 0, "tried to remove from an empty string (zero length)");
     str_lshift(str, at + 1, 1);
 }
 
 CBA_DEF void str_remove_range(String* str, usize start, usize end) {
-    assert(str->len > 0, "tried to remove from an empty string (zero length)");
-    assert(end >= start, "incorrect removal range (start: %zu, end: %zu)", start, end);
+    cba_assert(str->len > 0, "tried to remove from an empty string (zero length)");
+    cba_assert(end >= start, "incorrect removal range (start: %zu, end: %zu)", start, end);
 
     usize count = end - start;
     if (count > end) {
@@ -3546,9 +3532,9 @@ CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sen
 }
 
 CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, usize* where) {
-    assert(from < haystack.len,
-           "cannot find outside of string's bounds (len: %zu, from: %zu)",
-           haystack.len, from);
+    cba_assert(from < haystack.len,
+               "cannot find outside of string's bounds (len: %zu, from: %zu)",
+               haystack.len, from);
 
     b32 result = false;
 
@@ -3567,9 +3553,9 @@ CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, u
 }
 
 CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, usize* where) {
-    assert(from < haystack.len,
-           "cannot find outside of string's bounds (len: %zu, from: %zu)",
-           haystack.len, from);
+    cba_assert(from < haystack.len,
+               "cannot find outside of string's bounds (len: %zu, from: %zu)",
+               haystack.len, from);
 
     b32 result = false;
 
@@ -3614,7 +3600,7 @@ CBA_DEF b32 str_contains_other(String haystack, String needle, b32 case_sensitiv
 }
 
 CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
-    assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
+    cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
 
     b32 result = false;
 
@@ -3658,7 +3644,7 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from
 }
 
 CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
-    assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
+    cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
 
     b32 result = false;
 
@@ -3963,9 +3949,9 @@ CBA_DEF b32 str_chop_up_to_cstr(String* src, String* dest, const char* cstr, b32
 CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 case_sensitive) {
     b32 result = false;
 
-    assert(src->len >= other.len,
-           "other is too large for the source string (src len: %zu | other len: %zu)",
-           src->len, other.len);
+    cba_assert(src->len >= other.len,
+               "other is too large for the source string (src len: %zu | other len: %zu)",
+               src->len, other.len);
 
     usize iters = src->len - other.len;
 
@@ -4088,10 +4074,6 @@ CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
         arr->cap = new_len;
     }
 
-    assert(new_len < arr->cap,
-           "exceeded capacity of string array (capacity: %zu, new length: %zu)",
-           arr->cap,
-           new_len);
 }
 #else
 CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
@@ -4204,10 +4186,6 @@ CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
         cmd->cap = new_len;
     }
 
-    assert(new_len < cmd->cap,
-           "exceeded capacity of command (capacity: %zu, new length: %zu)",
-           cmd->cap,
-           new_len);
 }
 #else
 CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
@@ -4243,7 +4221,7 @@ CBA_DEF void cmd_append_str(Command* cmd, String str) {
 
 CBA_DEF void cmd_append_str_arr(Command* cmd, StringArray arr) {
     for (usize i = 0; i < arr.count; ++i) {
-        assert(arr.items[i].len, "cannot append empty string to command (element %zu of string array)", i);
+        cba_assert(arr.items[i].len, "cannot append empty string to command (element %zu of string array)", i);
         cmd_append_str(cmd, arr.items[i]);
     }
 }
@@ -4255,7 +4233,6 @@ CBA_DEF void __cmd_append_va(Command* cmd, usize n, ...) {
     for (usize i = 0; i < n; ++i) {
         const char* arg = va_arg(args, const char*);
         cmd_append_str(cmd, str_from_cstr(arg));
-        assert(cmd->items[cmd->count - 1].len, "cannot append empty string to command (argument %zu of variadic append)", i);
     }
 
     va_end(args);
@@ -4277,7 +4254,7 @@ CBA_DEF void cmd_reset(Command* cmd) {
 
 CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
     String args_str = str_from_cstr(args);
-    assert(args_str.len > 0, "cannot split empty command");
+    cba_assert(args_str.len > 0, "cannot split empty command");
 
     i32 double_quote_pos = -1;
     i32 single_quote_pos = -1;
@@ -4287,7 +4264,7 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
         if (args_str.data[i] == '\"') {
             if (double_quote_pos != -1) {
                 usize len = i - (usize)double_quote_pos;
-                assert(len != (usize)(-1), "incorrect length");
+                cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, (usize)double_quote_pos + 1, len - 1);
 
                 cmd_append_str(cmd, str_copy(arg));
@@ -4303,7 +4280,7 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
         else if (args_str.data[i] == '\'') {
             if (single_quote_pos != -1) {
                 usize len = i - (usize)single_quote_pos;
-                assert(len != (usize)(-1), "incorrect length");
+                cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, (usize)single_quote_pos + 1, len - 1);
 
                 cmd_append_str(cmd, str_copy(arg));
@@ -4319,7 +4296,7 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
         else if (args_str.data[i] == ' ') {
             if ((single_quote_pos == -1) && (double_quote_pos == -1) && (i != next_append_pos)) {
                 usize len = i - next_append_pos;
-                assert(len != (usize)(-1), "incorrect length");
+                cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, next_append_pos, len);
 
                 cmd_append_str(cmd, str_copy(arg));
@@ -4353,7 +4330,7 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
     char* output_file_path = NULL;
 
     if (opts.silence_output || opts.output_string) {
-        assert(!opts.async_pid, "cannot silence and/or read command output to string when running as async");
+        cba_assert(!opts.async_pid, "cannot silence and/or read command output to string when running as async");
 
         static u64 output_file_id = 0;
 
@@ -4365,10 +4342,10 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
             output_file_id += nanos_now();
         }
 
-        assert(file_create(output_file_path), "failed to create output file \"%s\"", output_file_path);
+        cba_assert(file_create(output_file_path), "failed to create output file \"%s\"", output_file_path);
 
         output_fd = _open_fd_for_read_write(output_file_path);
-        assert(output_fd != INVALID_HANDLE, "failed to open file descriptor for output file \"%s\"", output_file_path);
+        cba_assert(output_fd != INVALID_HANDLE, "failed to open file descriptor for output file \"%s\"", output_file_path);
     }
 
     ProcessID pid = proc_start(cmd, output_fd);
@@ -4387,10 +4364,10 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
                 *opts.output_string = str_alloc_with_cap(bytes);
 
                 if (bytes > 0) {
-                    assert(_seek_fd(output_fd, false) == 0, "incorrect seek position");
+                    cba_assert(_seek_fd(output_fd, false) == 0, "incorrect seek position");
 
                     isize bytes_read = _read_fd(output_fd, opts.output_string->data, bytes);
-                    assert(bytes_read != -1, "failed to read from output file \"%s\": %s", output_file_path, _os_error());
+                    cba_assert(bytes_read != -1, "failed to read from output file \"%s\": %s", output_file_path, _os_error());
 
                     opts.output_string->len = bytes_read;
                 }
@@ -4441,7 +4418,6 @@ CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim) {
 
     for (usize i = 0; i < cmd.count; ++i) {
         String* arg = &cmd.items[i];
-        assert(arg->len, "argument should not be empty");
 
         if (i != 0) {
             str_append_char(&result, ' ');

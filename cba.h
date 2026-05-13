@@ -15,12 +15,6 @@
     #define CBA_IMPLEMENTATION
     #include "cba.h"
 
-    Before the include, you can also add:
-
-    #define CBA_VERBOSE            to see internal logging (e.g. for errors)
-    #define CBA_NO_COLOR_OUTPUT    to prevent coloured output (ANSI escape codes)
-    #define CBA_PRINT_ON_REBUILD   to see messages when a program rebuilds itself
-
     All functions in this header are documented via comments above their definitions.
   
 
@@ -67,6 +61,9 @@
 
     Before including this file, #define any of the below options to override them:
   
+    - CBA_VERBOSE                     to see internal logging (e.g. for file errors)
+    - CBA_NO_COLOR_OUTPUT             to prevent coloured output via ANSI escape codes
+    - CBA_PRINT_ON_REBUILD            to see messages when the program rebuilds itself
     - CBA_REBUILD_COMMAND             the command to use for rebuilding
     - CBA_REBUILD_FAILED_MESSAGE      formatted message printed when a rebuild fails
     - CBA_REBUILD_COMPLETED_MESSAGE   formatted message printed when a rebuild succeeds
@@ -83,12 +80,19 @@
 
     - You can print Strings with `print(stok, sfmt(the_string));`
         - stok   expands to "`%.*s`"
-        - sfmt   expands to (int)str.len, (const char*)str.data
+        - sfmt   expands to (int)the_string.len, (const char*)the_string.data
 
     - The String type is always null-terminated UNLESS you take a "slice" of another string.
-      You can use `str_to_cstr` or `str_copy` to allocate a null-terminated version.
-
-    - Always prefer '/' characters as path separators.
+      You can use `str_to_cstr` or `str_copy` to always allocate a null-terminated version.
+    
+    - All allocations are done via a single arena allocator (global_arena). This uses a block
+      of statically-allocated memory and partitions it into smaller regions, which you can do
+      via the alloc, alloc_bytes, and alloc_array macros.
+    
+    - "Dynamically allocated" types and the da_append macro don't use actual dynamic allocation
+      (i.e. via realloc()), but will simply allocate new space in the global arena. This is
+      inefficient, but keeps all of the memory in one block and avoids any manual call to
+      malloc etc.
 
 
 

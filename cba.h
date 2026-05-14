@@ -3268,6 +3268,9 @@ CBA_DEF String str_path_to_absolute(String str) {
         str_clear(&result);
         str_copy_into(&result, str);
     }
+    else {
+        result.len = bytes;
+    }
 #else
     cba_assert(str.len < CBA_MAX_PATH, "input path length exceeds PATH_MAX");
 

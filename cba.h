@@ -4483,7 +4483,9 @@ CBA_DEF String str_from_current_time() {
     String result = str_alloc_with_cap(32);
 
 #if CBA_WINDOWS
-    #error windows get current time
+    SYSTEMTIME t = {0};
+    GetLocalTime(&t);
+    str_appendf(&result, "%02u:%02u:%02u", t.wHour, t.wMinute, t.wSecond);
 #else
     time_t now = time(0);
     struct tm* t = localtime(&now);
@@ -4498,7 +4500,9 @@ CBA_DEF String str_from_current_date() {
     String result = str_alloc_with_cap(32);
 
 #if CBA_WINDOWS
-    #error windows get current date
+    SYSTEMTIME t = {0};
+    GetLocalTime(&t);
+    str_appendf(&result, "%02u:%02u:%04u", t.wDay, t.wMonth, t.wYear);
 #else
     time_t now = time(0);
     struct tm* t = localtime(&now);

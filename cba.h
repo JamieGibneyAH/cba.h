@@ -4664,7 +4664,7 @@ CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
     }
     else {
         const char* unit = verbosity == 0 ? "h" : (verbosity == 1 ? "hrs" : "hours");
-        result = alloc_sprintf("%.3lf %s", (f64)nanos * (1e-9 / 360.0), unit);
+        result = alloc_sprintf("%.3lf %s", (f64)nanos * (1e-9 / 3600.0), unit);
     }
 
     return result;

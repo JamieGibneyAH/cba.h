@@ -4078,6 +4078,7 @@ CBA_DEF b32 str_contains_char(String haystack, char needle) {
 
 
 CBA_DEF b32 str_contains_cstr(String haystack, const char* needle, b32 case_sensitive) {
+    // @todo: off-by-one here
     return str_find_first_cstr(haystack, needle, case_sensitive, NULL);
 }
 

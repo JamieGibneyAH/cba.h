@@ -4648,7 +4648,7 @@ CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
     const u64 MILLI = 1000000;
     const u64 SEC   = 1000000000;
     const u64 MIN   = 60000000000;
-    const u64 HOUR  = 360000000000;
+    const u64 HOUR  = 3600000000000;
 
     if (nanos < MICRO) {
         const char* unit = verbosity == 0 ? "ns" : (verbosity == 1 ? "nanos" : "nanoseconds");

@@ -1189,6 +1189,10 @@ CBA_DEF String str_path_pwd(String str);
 ///
 /// This will expand relative paths such as `"../file"` or `"."`.
 CBA_DEF String str_path_to_absolute(String str);
+/// Returns a string containing the current working directory of the environment. If
+/// you're running the program from the command line, this is the directory which it was
+/// run from.
+CBA_DEF String str_cwd();
 /// Attempts to split the provided file `path` string into all of its parent paths,
 /// starting with the root directory and ending with the parent directory of the file (if
 /// any). If this fails, the resulting array will be zeroed.
@@ -3245,6 +3249,34 @@ CBA_DEF String str_path_to_absolute(String str) {
     }
     else {
         result.len = strlen(result.data);
+    }
+#endif
+
+    return result;
+}
+
+
+CBA_DEF String str_cwd() {
+    String result = str_alloc_with_cap(CBA_MAX_PATH);
+
+#if CBA_WINDOWS
+    // @todo: is there a more appropriate function for this, like getcwd on unix?
+    DWORD bytes = GetFullPathNameA(".", CBA_MAX_PATH, result.data, NULL);
+
+    if (bytes) {
+        result.len = bytes;
+    }
+    else {
+        verbose_print("failed to get cwd");
+    }
+#else
+    char* p = getcwd(result.data, result.cap);
+
+    if (p) {
+        result.len = (usize)strlen(p);
+    }
+    else {
+        verbose_print("failed to get cwd");
     }
 #endif
 

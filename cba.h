@@ -77,6 +77,9 @@
     
     # Notes
 
+    - You should prefer to use '/' characters to separate paths as it's easier to convert
+      these on Windows compared to converting '\' separators on Unix.
+
     - You can print Strings with `print(stok, sfmt(the_string));`
         - stok   expands to "`%.*s`"
         - sfmt   expands to (int)the_string.len, (const char*)the_string.data
@@ -373,13 +376,13 @@
         CBA_TRAP;                                                                        \
     } (void)(0)
 
-#define cba_panic(s, ...)                                                                \
-    fprintf(stderr,                                                                      \
-            ANSI_BOLD("%s:%04i") ANSI_BOLD_RED(" panic") " in %s: \"" s "\"\n",                 \
-            __FILE_NAME__,                                                               \
-            __LINE__,                                                                    \
-            __FUNCTION__,                                                                \
-            ## __VA_ARGS__);                                                             \
+#define cba_panic(s, ...)                                                       \
+    fprintf(stderr,                                                             \
+            ANSI_BOLD("%s:%04i") ANSI_BOLD_RED(" panic") " in %s: \"" s "\"\n", \
+            __FILE_NAME__,                                                      \
+            __LINE__,                                                           \
+            __FUNCTION__,                                                       \
+            ## __VA_ARGS__);                                                    \
     CBA_TRAP
 
 #define info(s, ...)  printf("[" ANSI_BOLD_GREEN(CBA_INFO_PREFIX)  "] " s "\n", ## __VA_ARGS__)
@@ -3213,8 +3216,6 @@ CBA_DEF String str_path_to_absolute(String str) {
 #if CBA_WINDOWS
     DWORD bytes = GetFullPathNameA(str.data, CBA_MAX_PATH, result.data, NULL);
 
-    // @todo: convert '/' to '\\'?
-
     if (!bytes) {
         verbose_print("failed to get absolute path name from " stok ": %s", sfmt(str), _os_error());
         str_clear(&result);
@@ -3905,6 +3906,7 @@ CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensiti
     b32 result = false;
 
     if (haystack.len && needle.len && (haystack.len > needle.len)) {
+        // @todo: this might be off by one
         isize off = haystack.len - needle.len;
 
         do {
@@ -4030,7 +4032,6 @@ CBA_DEF b32 str_contains_char(String haystack, char needle) {
 
 
 CBA_DEF b32 str_contains_cstr(String haystack, const char* needle, b32 case_sensitive) {
-    // @todo: off-by-one here
     return str_find_first_cstr(haystack, needle, case_sensitive, NULL);
 }
 
@@ -5107,7 +5108,7 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
         - Various bug fixes
     - v1.2.0 (01 May 2026) (by @jamiegibney)
         - Strings, StringArrays, and Commands now support dynamic allocation by default
-        - Added `CBA_NO_DYNAMIC_ALLOCATION` to opt out of dynamically-allocated strings and arrays
+        - Added CBA_NO_DYNAMIC_ALLOCATION to opt out of dynamically-allocated strings and arrays
         - Added da_append macros for dynamic arrays
         - Added str split/chop/shrink functions
         - Added next_pow2

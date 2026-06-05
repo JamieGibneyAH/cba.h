@@ -47,7 +47,7 @@
         //   gcc -ggdb -DDEBUG -Wall -Wextra -o build/main main.c
         //
         // And with MSVC:
-        //   cl.exe /D_CRT_SECURE_NO_WARNINGS /DDEBUG /W4 /nologo /Fe:build/main main.c
+        //   cl.exe /ZI /DDEBUG /W4 /nologo /D_CRT_SECURE_NO_WARNINGS /Fe:build/main main.c
 
         // Run the command, block until it terminates, and assert that it exits normally.
         cmd_run(cmd);
@@ -80,9 +80,9 @@
     - You should prefer to use '/' characters to separate paths as it's easier to convert
       these on Windows compared to converting '\' separators on Unix.
 
-    - You can print Strings with `print(stok, sfmt(the_string));`
-        - stok   expands to "`%.*s`"
-        - sfmt   expands to (int)the_string.len, (const char*)the_string.data
+    - You can print Strings with `print(stok, sfmt(s));`
+        - stok      expands to "`%.*s`"
+        - sfmt(s)   expands to (int)s.len, (const char*)s.data
 
     - The String type is always null-terminated UNLESS you take a "slice" of another string.
       You can use `str_to_cstr` or `str_copy` to always allocate a null-terminated version.
@@ -92,10 +92,10 @@
       alloc, alloc_bytes, and alloc_array macros. The arena will dynamically allocate new
       memory blocks if it exceeds its current capacity.
     
-    - "Dynamically allocated" types and the da_append macro don't use actual dynamic allocation
-      (i.e. via realloc()), but will simply allocate new space in the global arena. This is
-      inefficient, but keeps all of the memory within memory blocks and avoids manual calls
-      to malloc, etc.
+    - "Dynamically allocated" types and the da_append macro don't use actual dynamic
+      allocation (i.e. via realloc()), but will simply allocate new space in the global
+      arena. This can be inefficient in terms of memory utilisation, but keeps all of the
+      memory within large blocks and avoids individual calls to malloc, etc.
 
 
 

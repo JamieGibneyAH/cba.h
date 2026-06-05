@@ -72,7 +72,6 @@
     - CBA_ALIGNMENT                   number of bytes to align allocations to
     - CBA_MIN_STRING_CAPACITY         minimum capacity for strings
     - CBA_MIN_ARRAY_CAPACITY          minimum capacity for string arrays and commands
-    - CBA_NO_DYNAMIC_ALLOCATION       whether to disable dynamic (re)allocation
 
 
     
@@ -1621,7 +1620,6 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
     #define _DECLTYPE_CAST(x)
 #endif
 
-#ifdef CBA_NO_DYNAMIC_ALLOCATION
 #define da_reserve(arr, new_cap)                                                                         \
     do {                                                                                                 \
         if ((new_cap) > (arr)->cap) {                                                                    \
@@ -1635,19 +1633,6 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
             cba_assert((arr)->items, "failed to reallocate %zu elements for dynamic array", (arr)->cap); \
         }                                                                                                \
     } while (0)
-#else
-#define da_reserve(arr, new_cap)                                                                                  \
-    do {                                                                                                          \
-        if ((new_cap) > (arr)->cap) {                                                                             \
-            if (!(arr)->cap) {                                                                                    \
-                (arr)->cap = CBA_MIN_ARRAY_CAPACITY;                                                              \
-            }                                                                                                     \
-            (arr)->cap = next_pow2(new_cap);                                                                      \
-            (arr)->items = _DECLTYPE_CAST((arr)->items)realloc((arr)->items, (arr)->cap * sizeof(*(arr)->items)); \
-            cba_assert((arr)->items, "failed to reallocate %zu elements for dynamic array", (arr)->cap);          \
-        }                                                                                                         \
-    } while (0)
-#endif
 
 #define da_append(arr, element)                   \
     do {                                          \
@@ -2977,20 +2962,6 @@ CBA_DEF i32 __proc_wait_va(usize n, ...) {
 
 // @mark: strings
 
-#ifdef CBA_NO_DYNAMIC_ALLOCATION
-// CBA_DEF void _str_resize(String* str, usize new_len) {
-//     if (!str->cap) {
-//         new_len = max(new_len, CBA_MIN_STRING_CAPACITY);
-//
-//         str->data = alloc_array(new_len, char);
-//         str->cap = new_len;
-//     }
-//
-//     cba_assert(new_len < str->cap,
-//                "string capacity was exceeded (capacity: %zu, new length: %zu)",
-//                str->cap,
-//                new_len);
-// }
 CBA_DEF void _str_resize(String* str, usize new_len) {
     new_len = max(new_len, CBA_MIN_STRING_CAPACITY);
 
@@ -3008,24 +2979,6 @@ CBA_DEF void _str_resize(String* str, usize new_len) {
         str->cap = new_cap;
     }
 }
-#else
-CBA_DEF void _str_resize(String* str, usize new_len) {
-    new_len = max(new_len, CBA_MIN_STRING_CAPACITY);
-
-    if (!str->cap) {
-        str->data = (char*)calloc(new_len + 1, sizeof(char));
-        str->cap = new_len;
-    }
-
-    if (new_len > str->cap) {
-        usize new_cap = next_pow2(new_len);
-
-        str->data = (char*)realloc(str->data, new_cap + 1);
-        memz(str->data + str->cap, (new_cap + 1) - str->cap);
-        str->cap = new_cap;
-    }
-}
-#endif
 
 CBA_DEF void str_clear(String* str) {
     str->len = 0;
@@ -4691,20 +4644,6 @@ CBA_DEF const char* fmt_version(Version v) {
 
 // @mark: string array
 
-#ifdef CBA_NO_DYNAMIC_ALLOCATION
-// CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
-//  new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
-//      
-//     if (!arr->cap) {
-//         arr->items = alloc_array(new_len, String);
-//         arr->cap = new_len;
-//     }
-//
-//     cba_assert(new_len < arr->cap,
-//                "exceeded capacity of string array (capacity: %zu, new length: %zu)",
-//                arr->cap,
-//                new_len);
-// }
 CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
         
@@ -4723,24 +4662,6 @@ CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
         arr->cap = new_cap;
     }
 }
-#else
-CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
-    new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
-        
-    if (!arr->cap) {
-        arr->items = (String*)calloc(new_len, sizeof(String));
-        arr->cap = new_len;
-    }
-
-    if (new_len > arr->cap) {
-        usize new_cap = next_pow2(new_len);
-
-        arr->items = (String*)realloc(arr->items, new_cap * sizeof(String));
-        memz(arr->items + arr->cap, new_cap - arr->cap);
-        arr->cap = new_cap;
-    }
-}
-#endif
 
 CBA_DEF void str_arr_append_str(StringArray* arr, String str) {
     if (!arr->items) {
@@ -4830,22 +4751,6 @@ CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator) {
 
 // @mark: commands
 
-#ifdef CBA_NO_DYNAMIC_ALLOCATION
-// CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
-//     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
-//
-//     if (!cmd->cap) {
-//         new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
-//
-//         cmd->items = alloc_array(new_len, String);
-//         cmd->cap = new_len;
-//     }
-//
-//     cba_assert(new_len < cmd->cap,
-//                "exceeded capacity of command (capacity: %zu, new length: %zu)",
-//                cmd->cap,
-//                new_len);
-// }
 CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
 
@@ -4863,24 +4768,6 @@ CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
         cmd->cap = new_cap;
     }
 }
-#else
-CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
-    new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
-
-    if (!cmd->cap) {
-        cmd->items = (String*)calloc(new_len, sizeof(String));
-        cmd->cap = new_len;
-    }
-
-    if (new_len > cmd->cap) {
-        usize new_cap = next_pow2(new_len);
-
-        cmd->items = (String*)realloc(cmd->items, new_cap * sizeof(String));
-        memz(cmd->items + cmd->cap, new_cap - cmd->cap);
-        cmd->cap = new_cap;
-    }
-}
-#endif
 
 CBA_DEF void cmd_append_str(Command* cmd, String str) {
     if (!cmd->items) {

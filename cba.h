@@ -870,7 +870,7 @@ typedef struct Command Command;
 #define terabytes(num) ((u64)(num) << 40)
 
 #define countof(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
-#define bstr(boolean) ((boolean) ? "yes" : "no")
+#define btos(boolean) ((boolean) ? "yes" : "no")
 
 #define memz(ptr, bytes) memset((ptr), 0, (bytes))
 #define memz_array(ptr, count) memz((ptr), (count) * sizeof((ptr)[0]))

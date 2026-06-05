@@ -3858,46 +3858,7 @@ CBA_DEF b32 str_find_last_char(String haystack, char needle, usize* where) {
 
 
 CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, usize* where) {
-    // @todo: could be implemented in terms of str_find_first_other_from?
-    b32 result = false;
-
-    if (haystack.len && needle.len && (haystack.len > needle.len)) {
-        usize iters = haystack.len - needle.len + 1;
-        usize off = 0;
-
-        do {
-            b32 mismatch = false;
-
-            for (usize i = 0; i < needle.len; ++i) {
-                char a = haystack.data[off + i];
-                char b = needle.data[i];
-
-                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
-                    mismatch = a != b;
-                }
-                else {
-                    // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
-                    mismatch = (a != b) && ((a ^ 0x20) != b);
-                }
-
-                if (mismatch) break;
-            }
-
-            if (!mismatch) {
-                result = true;
-
-                if (where) {
-                    *where = off;
-                }
-
-                break;
-            }
-
-            off += 1;
-        } while (off < iters);
-    }
-
-    return result;
+    return str_find_first_other_from(haystack, needle, 0, case_sensitive, where);
 }
 
 

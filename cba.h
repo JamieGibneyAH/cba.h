@@ -1,5 +1,5 @@
 /*  
-    cba.h | v1.4.1 | https://github.com/jamiegibney/cba.h
+    cba.h | v1.5.0 | https://github.com/jamiegibney/cba.h
   
     Single-header library for build recipes and general utilities in C.
 
@@ -4929,6 +4929,14 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
 /*
     # Version history
 
+    - v1.5.0 (05 Jun 2026) (by @jamiegibney)
+        - Added str_cwd for getting the current working directory
+        - Removed CBA_NO_DYNAMIC_ALLOCATION in favour of using dynamically-resizable arenas
+        - Fixed some off-by-one errors
+        - str_find_first_other is now written in terms of str_find_first_other_from
+        - Removed CBA_UNREACHABLE, as its usage is easily misunderstood
+        - Renamed bstr to btos
+        - Updated documentation
     - v1.4.1 (13 May 2026) (by @jamiegibney)
         - Fixed an issue where exit code values might be overwritten or not set
     - v1.4.0 (13 May 2026) (by @jamiegibney)

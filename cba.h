@@ -3908,7 +3908,7 @@ CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensit
     b32 result = false;
 
     if (haystack.len && needle.len && (haystack.len > needle.len)) {
-        usize iters = haystack.len - needle.len;
+        usize iters = haystack.len - needle.len + 1;
         usize off = 0;
 
         do {
@@ -4093,7 +4093,7 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from
     b32 result = false;
 
     if (haystack.len && needle.len && (haystack.len > needle.len)) {
-        usize iters = haystack.len - needle.len - from;
+        usize iters = haystack.len - needle.len - from + 1;
         usize off = from;
 
         do {

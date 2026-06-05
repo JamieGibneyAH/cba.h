@@ -271,7 +271,6 @@
     #define CBA_DLL_EXPORT extern "C" __attribute__((visibility("default")))
     #define CBA_INLINE __attribute__((__always_inline__)) inline
     #define CBA_FALLTHROUGH [[fallthrough]]
-    #define CBA_UNREACHABLE __builtin_unreachable()
     #define CBA_TRAP __builtin_trap()
 #endif
 
@@ -396,7 +395,7 @@
 #endif
 
 #define todo() cba_panic("TODO: %s", __PRETTY_FUNCTION__)
-#define unreachable() CBA_UNREACHABLE; cba_panic("unreachable code path was hit")
+#define unreachable() cba_panic("unreachable code path was hit")
 
 #define CBA_DEF static inline
 

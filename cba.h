@@ -992,6 +992,10 @@ extern Arena global_arena;
 CBA_DEF void* arena_alloc(Arena* arena, usize size);
 /// Frees all of the arena's memory blocks and zeroes the arena.
 CBA_DEF void arena_free(Arena* arena);
+/// Returns the total number of bytes used by the arena.
+CBA_DEF usize arena_used(Arena* arena);
+/// Returns the total number of bytes allocated by the arena.
+CBA_DEF usize arena_allocated(Arena* arena);
 
 /// Allocates a single instance of a `type`.
 #define alloc(type) (type*)arena_alloc(&global_arena, sizeof(type))
@@ -2014,6 +2018,46 @@ CBA_DEF void arena_free(Arena* arena) {
     }
 
     memz(arena, sizeof(Arena));
+}
+
+CBA_DEF usize arena_used(Arena* arena) {
+    usize result = 0;
+
+    u8* base = arena->base;
+
+    result += arena->used;
+    usize capacity = arena->capacity;
+
+    while (base) {
+        ArenaBlockFooter footer = *((ArenaBlockFooter*)(base + capacity));
+
+        base = footer.base;
+        capacity = footer.capacity;
+
+        result += footer.used;
+    }
+
+    return result;
+}
+
+CBA_DEF usize arena_allocated(Arena* arena) {
+    usize result = 0;
+
+    u8* base = arena->base;
+
+    result += arena->capacity;
+    usize capacity = arena->capacity;
+
+    while (base) {
+        ArenaBlockFooter footer = *((ArenaBlockFooter*)(base + capacity));
+
+        base = footer.base;
+        capacity = footer.capacity;
+
+        result += footer.capacity;
+    }
+
+    return result;
 }
 
 CBA_DEF char* alloc_sprintf(const char* fmt, ...) {

@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     //   gcc -ggdb -DDEBUG -Wall -Wextra -o build/main main.c
     //
     // And with MSVC:
-    //   cl.exe /D_CRT_SECURE_NO_WARNINGS /DDEBUG /W4 /nologo /Fe:build/main main.c
+    //   cl.exe /ZI /DDEBUG /W4 /nologo /D_CRT_SECURE_NO_WARNINGS /Fe:build/main main.c
 
     // Run the command, block until it terminates, and assert that it exits normally.
     cmd_run(cmd);

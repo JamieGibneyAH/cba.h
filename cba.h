@@ -3974,6 +3974,7 @@ CBA_DEF b32 str_contains_other(String haystack, String needle, b32 case_sensitiv
 }
 
 CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
+    // @todo: potentially an off-by-one when the needle as at the end of the string?
     cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
 
     b32 result = false;

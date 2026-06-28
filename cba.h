@@ -1293,7 +1293,7 @@ CBA_DEF b32 str_trim_null(String* str);
 /// string.
 CBA_DEF StringArray str_split_by(String str, char delim);
 /// Splits the provided `String` by newline characters, returning an array of the
-/// separated lines. No newline characters will not be included in the resulting strings.
+/// separated lines. Newline characters will not be included in the resulting strings.
 ///
 /// This function considers `\r\n` sequences to be newlines, and will omit them from the
 /// results.
@@ -1364,13 +1364,11 @@ CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sen
 
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing forwards. When `where` is non-NULL, it is set to the index of the
-/// first matching character, if found. When `case_sensitive` is false, case is
-/// ignored for alphabetic characters.
+/// first matching character, if found.
 CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, usize* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing backwards. When `where` is non-NULL, it is set to the index of the
-/// last matching character, if found. When `case_sensitive` is false, case is
-/// ignored for alphabetic characters.
+/// last matching character, if found.
 CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, usize* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing forwards. When `where` is non-NULL, it is set to the index of the

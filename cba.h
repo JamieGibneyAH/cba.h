@@ -959,6 +959,9 @@ CBA_DEF void mem_swap(void* a, void* b, usize len_bytes);
 /// Whether the current system is little-endian or not.
 CBA_DEF b32 is_little_endian();
 
+/// Returns the number of `1` bits in `mask`.
+CBA_DEF usize count_bits(u64 mask);
+
 /// Returns the next power of two value for `x`.
 CBA_DEF usize next_pow2(usize x);
 
@@ -1861,6 +1864,17 @@ CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
 CBA_DEF b32 is_little_endian() {
     u16 x = 1;
     return *((u8*)&x);
+}
+
+CBA_DEF usize count_bits(u64 mask) {
+    usize result = 0;
+
+    while (mask) {
+        result += mask & 0x1;
+        mask >>= 1;
+    }
+
+    return result;
 }
 
 CBA_DEF usize next_pow2(usize x) {

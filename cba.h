@@ -3195,8 +3195,8 @@ CBA_DEF String str_path_pwd(String str) {
 
     if (found_separator) {
         result.data = str.data;
+        result.cap = result.len - separator_pos;
         result.len = separator_pos;
-        result.cap = str.cap - separator_pos - 1;
     }
 
     return result;
@@ -3903,16 +3903,18 @@ CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, us
 
     b32 result = false;
 
-    for (usize i = 0; i <= from; ++i) {
-        usize idx = haystack.len - i - 1;
+    if (haystack.len) {
+        for (usize i = 0; i <= from; ++i) {
+            usize idx = haystack.len - i - 1;
 
-        if (haystack.data[idx] == needle) {
-            if (where) {
-                *where = idx;
+            if (haystack.data[idx] == needle) {
+                if (where) {
+                    *where = idx;
+                }
+
+                result = true;
+                break;
             }
-
-            result = true;
-            break;
         }
     }
 

@@ -42,7 +42,8 @@ And otherwise just `#include "cba.h` for its definitions.
 #define CBA_IMPLEMENTATION   // Generate implementations.
 #include "cba.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     // Allow the program to rebuild itself when modified.
     CBA_REBUILD(argc, argv);
 

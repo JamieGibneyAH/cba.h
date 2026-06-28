@@ -24,7 +24,8 @@
     #define CBA_IMPLEMENTATION
     #include "cba.h"
   
-    int main(int argc, char** argv) {
+    int main(int argc, char** argv)
+    {
         // Allow the program to rebuild itself when modified.
         CBA_REBUILD(argc, argv);
 
@@ -730,7 +731,8 @@ typedef u64 Version;
 // @mark: types
 
 /// A kind of file type.
-enum FileKind {
+enum FileKind
+{
     /// The file's type could not be detected.
     FILE_KIND_UNKNOWN = 0,
     /// The file is a regular file.
@@ -744,7 +746,8 @@ enum FileKind {
 };
 typedef enum FileKind FileKind;
 
-struct ArenaBlockFooter {
+struct ArenaBlockFooter
+{
     u8* base;
     usize used;
     usize capacity;
@@ -755,7 +758,8 @@ typedef struct ArenaBlockFooter ArenaBlockFooter;
 
 /// An arena allocator, used for linearly partitioning a memory block into smaller
 /// regions.
-struct Arena {
+struct Arena
+{
     /// Base pointer of the arena's memory block.
     u8* base;
     /// The number of bytes which the arena has allocated.
@@ -769,7 +773,8 @@ struct Arena {
 typedef struct Arena Arena;
 
 /// UTF-8 encoded string type.
-struct String {
+struct String
+{
     /// Pointer to the string's data.
     char* data;
     /// Number of bytes used in the string.
@@ -780,7 +785,8 @@ struct String {
 typedef struct String String;
 
 /// Array of `String` elements.
-struct StringArray {
+struct StringArray
+{
     /// Pointer to the array's data.
     String* items;
     /// Number of items in the array.
@@ -791,7 +797,8 @@ struct StringArray {
 typedef struct StringArray StringArray;
 
 /// Options to provide when running a command.
-struct CommandOptions {
+struct CommandOptions
+{
     /// Optional pointer to a `String` to use for capturing the command's output.
     ///
     /// @important: this option cannot be paired with a non-null `async_pid`.
@@ -816,7 +823,8 @@ typedef struct CommandOptions CommandOptions;
 
 /// A specialised `StringArray` designed to represent a sequence of arguments which can be
 /// run as a shell command.
-struct Command {
+struct Command
+{
     /// Pointer to the array of arguments in the command.
     String* items;
     /// Number of arguments in the command.
@@ -1667,7 +1675,8 @@ Arena global_arena = {0};
 #if CBA_WINDOWS
 #define CBA_WIN32_ERR_MSG_SIZE (4 << 10) // 4 KB
 
-CBA_DEF char* win32_err_message(DWORD err) {
+CBA_DEF char* win32_err_message(DWORD err)
+{
     char* result = NULL;
 
     static char buffer[CBA_WIN32_ERR_MSG_SIZE] = {0};
@@ -1675,19 +1684,25 @@ CBA_DEF char* win32_err_message(DWORD err) {
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err,
         LANG_USER_DEFAULT, buffer, CBA_WIN32_ERR_MSG_SIZE, NULL);
 
-    if (msg_size == 0) {
-        if (GetLastError() != ERROR_MR_MID_NOT_FOUND) {
-            if (sprintf(buffer, "Could not get error message for 0x%lX", err) > 0) {
+    if (msg_size == 0)
+    {
+        if (GetLastError() != ERROR_MR_MID_NOT_FOUND)
+        {
+            if (sprintf(buffer, "Could not get error message for 0x%lX", err) > 0)
+            {
                 result = (char*)buffer;
             }
         }
-        else if (sprintf(buffer, "Invalid Windows error code: 0x%lX", err) > 0) {
+        else if (sprintf(buffer, "Invalid Windows error code: 0x%lX", err) > 0)
+        {
             result = (char*)buffer;
         }
     }
-    else {
+    else
+    {
         // trim trailing whitespace.
-        while (msg_size > 1 && is_whitespace(buffer[msg_size - 1])) {
+        while (msg_size > 1 && is_whitespace(buffer[msg_size - 1]))
+        {
             msg_size -= 1;
             buffer[msg_size] = '\0';
         }
@@ -1696,18 +1711,21 @@ CBA_DEF char* win32_err_message(DWORD err) {
     return result;
 }
 
-static inline const char* _os_error() {
+static inline const char* _os_error()
+{
     return win32_err_message(GetLastError());
 }
 
 #else
-static inline const char* _os_error() {
+static inline const char* _os_error()
+{
     return strerror(errno);
 }
 
 #endif
 
-CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) {
+CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...)
+{
     u64 start_ns = nanos_now();
     CBA_UNUSED(start_ns);
 
@@ -1716,13 +1734,15 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
     String binary_path = str_from_cstr(argv[0]);
 
 #if CBA_WINDOWS
-    if (str_starts_with(binary_path, ".\\")) {
+    if (str_starts_with(binary_path, ".\\"))
+    {
         str_lshift(&binary_path, 2, 2);
     }
 #endif
 
 #if CBA_WINDOWS
-    if (!str_ends_with(binary_path, ".exe")) {
+    if (!str_ends_with(binary_path, ".exe"))
+    {
         str_append_cstr(&binary_path, ".exe");
     }
 #endif
@@ -1735,7 +1755,8 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
 
     // @jcg: try to remove a previously backed-up executable. It doesn't really matter if
     // it fails - this just helps to keep the file tree a little cleaner.
-    if (file_exists(old_binary_path_cstr)) {
+    if (file_exists(old_binary_path_cstr))
+    {
         file_delete(old_binary_path_cstr);
     }
 
@@ -1744,13 +1765,15 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
 
     // @jcg: if this header is found in the root directory then it too can be watched,
     // which is particularly useful when developing cba in its own repository.
-    if (file_exists("cba.h")) {
+    if (file_exists("cba.h"))
+    {
         str_arr_append_cstrs(&source_paths, "cba.h");
     }
 
     uninit va_list args;
     va_start(args, source_path);
-    for (;;) {
+    for (;;)
+    {
         const char* path = va_arg(args, const char*);
         if (!path) break;
 
@@ -1760,10 +1783,12 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
 
     i32 rebuild_needed = files_need_rebuild(binary_path, source_paths);
 
-    if (rebuild_needed == -1) {
+    if (rebuild_needed == -1)
+    {
         exit_code = 1;
     }
-    else if (rebuild_needed == 1) {
+    else if (rebuild_needed == 1)
+    {
         Command cmd = {0};
 
         // @jcg: a backup of the previous executable has to be created in case the rebuild
@@ -1772,14 +1797,17 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
         // to remove the backed up file when the program is next run, but it can't remove
         // it before then.
 
-        if (file_move(binary_path_cstr, old_binary_path_cstr)) {
+        if (file_move(binary_path_cstr, old_binary_path_cstr))
+        {
             cmd_append(&cmd, CBA_REBUILD_COMMAND(argv[0], source_path));
 
             b32 success = cmd_try_run(cmd);
 
-            if (success) {
+            if (success)
+            {
 #if defined(CBA_PRINT_ON_REBUILD) || defined(CBA_VERBOSE)
-                if (exit_code == 0) {
+                if (exit_code == 0)
+                {
                     info("%s", CBA_REBUILD_COMPLETED_MESSAGE(binary_path_cstr, nanos_now() - start_ns));
                 }
 #endif
@@ -1793,11 +1821,13 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
 
                 success = cmd_try_run(cmd);
 
-                if (!success) {
+                if (!success)
+                {
                     exit_code = 1;
                 }
             }
-            else {
+            else
+            {
 #if defined(CBA_PRINT_ON_REBUILD) || defined(CBA_VERBOSE)
                 error("%s", CBA_REBUILD_FAILED_MESSAGE(binary_path_cstr));
 #endif
@@ -1806,17 +1836,20 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...) 
                 exit_code = 1;
             }
         }
-        else {
+        else
+        {
             exit_code = 1;
         }
     }
 
-    if (rebuild_needed != 0) {
+    if (rebuild_needed != 0)
+    {
         exit(exit_code);
     }
 }
 
-CBA_DEF u64 nanos_now(void) {
+CBA_DEF u64 nanos_now(void)
+{
     u64 result = 0;
 
 #if CBA_WINDOWS
@@ -1832,7 +1865,8 @@ CBA_DEF u64 nanos_now(void) {
     return result;
 }
 
-CBA_DEF void wait_ms(u64 ms) {
+CBA_DEF void wait_ms(u64 ms)
+{
 #if CBA_WINDOWS
     Sleep((DWORD)ms);
 #else
@@ -1848,11 +1882,13 @@ CBA_DEF void wait_ms(u64 ms) {
 #endif
 }
 
-CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
+CBA_DEF void mem_swap(void* a, void* b, usize len_bytes)
+{
     u8* lhs = (u8*)a;
     u8* rhs = (u8*)b;
 
-    while (len_bytes--) {
+    while (len_bytes--)
+    {
         u8 tmp = *lhs;
         *lhs = *rhs;
         *rhs = tmp;
@@ -1861,15 +1897,18 @@ CBA_DEF void mem_swap(void* a, void* b, usize len_bytes) {
     }
 }
 
-CBA_DEF b32 is_little_endian() {
+CBA_DEF b32 is_little_endian()
+{
     u16 x = 1;
     return *((u8*)&x);
 }
 
-CBA_DEF usize count_bits(u64 mask) {
+CBA_DEF usize count_bits(u64 mask)
+{
     usize result = 0;
 
-    while (mask) {
+    while (mask)
+    {
         result += mask & 0x1;
         mask >>= 1;
     }
@@ -1877,14 +1916,18 @@ CBA_DEF usize count_bits(u64 mask) {
     return result;
 }
 
-CBA_DEF usize next_pow2(usize x) {
+CBA_DEF usize next_pow2(usize x)
+{
     uninit usize result;
 
-    if (x == 0) {
+    if (x == 0)
+    {
         result = 1;
     }
-    else {
-        if (is_pow2(x)) {
+    else
+    {
+        if (is_pow2(x))
+        {
             x += 1;
         }
 
@@ -1903,7 +1946,8 @@ CBA_DEF usize next_pow2(usize x) {
     return result;
 }
 
-CBA_DEF b32 has_exe_in_path(const char* exe_name) {
+CBA_DEF b32 has_exe_in_path(const char* exe_name)
+{
     b32 result = false;
 
 #if CBA_WINDOWS
@@ -1915,74 +1959,88 @@ CBA_DEF b32 has_exe_in_path(const char* exe_name) {
     return result;
 }
 
-CBA_DEF b32 is_main_git_branch() {
+CBA_DEF b32 is_main_git_branch()
+{
     b32 result = false;
 
     String capture = {0};
     if (cmd_try_run_direct("git branch", .output_string = &capture) &&
         (str_contains_cstr(capture, "main", false) ||
-         str_contains_cstr(capture, "master", false))) {
+         str_contains_cstr(capture, "master", false)))
+    {
         result = true;
     }
 
     return result;
 }
 
-CBA_DEF String git_commit_hash() {
+CBA_DEF String git_commit_hash()
+{
     String result = str_from_cstr("[UNKNOWN COMMIT HASH]");
 
-    if (cmd_try_run_direct("git log --pretty=format:%h -n 1", .output_string = &result)) {
+    if (cmd_try_run_direct("git log --pretty=format:%h -n 1", .output_string = &result))
+    {
         str_trim_whitespace(&result);
     }
 
     return result;
 }
 
-CBA_DEF String git_full_commit_hash() {
+CBA_DEF String git_full_commit_hash()
+{
     String result = str_from_cstr("[UNKNOWN COMMIT HASH]");
 
-    if (cmd_try_run_direct("git log --pretty=format:%H -n 1", .output_string = &result)) {
+    if (cmd_try_run_direct("git log --pretty=format:%H -n 1", .output_string = &result))
+    {
         str_trim_whitespace(&result);
     }
 
     return result;
 }
 
-CBA_DEF String git_branch_name() {
+CBA_DEF String git_branch_name()
+{
     String result = str_from_cstr("[UNKNOWN BRANCH]");
 
-    if (cmd_try_run_direct("git branch --show-current", .output_string = &result)) {
+    if (cmd_try_run_direct("git branch --show-current", .output_string = &result))
+    {
         str_trim_whitespace(&result);
     }
 
     return result;
 }
 
-CBA_DEF String git_committer_name() {
+CBA_DEF String git_committer_name()
+{
     String result = str_from_cstr("[UNKNOWN COMMITTER]");
 
-    if (cmd_try_run_direct("git log --pretty=format:%an -n 1", .output_string = &result)) {
+    if (cmd_try_run_direct("git log --pretty=format:%an -n 1", .output_string = &result))
+    {
         str_trim_whitespace(&result);
     }
 
     return result;
 }
 
-CBA_DEF void* arena_alloc(Arena* arena, usize size) {
+CBA_DEF void* arena_alloc(Arena* arena, usize size)
+{
     void* result = NULL;
 
     usize alignment_offset = 0;
     isize curr = (isize)(arena->base + arena->used);
     isize mask = (isize)CBA_ALIGNMENT - 1;
 
-    if (curr & mask) {
+    if (curr & mask)
+    {
         alignment_offset = (usize)((isize)CBA_ALIGNMENT - (curr & mask));
     }
 
     usize effective_size = size + alignment_offset;
 
-    if ((arena->used + effective_size) > arena->capacity) {
-        if (!arena->min_block_size) {
+    if ((arena->used + effective_size) > arena->capacity)
+    {
+        if (!arena->min_block_size)
+        {
             arena->min_block_size = CBA_MEMORY_BLOCK_SIZE;
             cba_assert(is_pow2(CBA_ALIGNMENT), "CBA_ALIGNMENT is not a power-of-two value");
         }
@@ -1994,10 +2052,12 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size) {
         };
 
         uninit usize block_size;
-        if (effective_size > arena->min_block_size) {
+        if (effective_size > arena->min_block_size)
+        {
             block_size = effective_size + sizeof(ArenaBlockFooter);
         }
-        else {
+        else
+        {
             block_size = arena->min_block_size + sizeof(ArenaBlockFooter);
         }
 
@@ -2015,8 +2075,10 @@ CBA_DEF void* arena_alloc(Arena* arena, usize size) {
     return result;
 }
 
-CBA_DEF void arena_free(Arena* arena) {
-    while (arena->base) {
+CBA_DEF void arena_free(Arena* arena)
+{
+    while (arena->base)
+    {
         ArenaBlockFooter footer = *get_arena_footer(arena);
 
         free(arena->base);
@@ -2029,7 +2091,8 @@ CBA_DEF void arena_free(Arena* arena) {
     memz(arena, sizeof(Arena));
 }
 
-CBA_DEF usize arena_used(Arena* arena) {
+CBA_DEF usize arena_used(Arena* arena)
+{
     usize result = 0;
 
     u8* base = arena->base;
@@ -2037,7 +2100,8 @@ CBA_DEF usize arena_used(Arena* arena) {
     result += arena->used;
     usize capacity = arena->capacity;
 
-    while (base) {
+    while (base)
+    {
         ArenaBlockFooter footer = *((ArenaBlockFooter*)(base + capacity));
 
         base = footer.base;
@@ -2049,7 +2113,8 @@ CBA_DEF usize arena_used(Arena* arena) {
     return result;
 }
 
-CBA_DEF usize arena_allocated(Arena* arena) {
+CBA_DEF usize arena_allocated(Arena* arena)
+{
     usize result = 0;
 
     u8* base = arena->base;
@@ -2057,7 +2122,8 @@ CBA_DEF usize arena_allocated(Arena* arena) {
     result += arena->capacity;
     usize capacity = arena->capacity;
 
-    while (base) {
+    while (base)
+    {
         ArenaBlockFooter footer = *((ArenaBlockFooter*)(base + capacity));
 
         base = footer.base;
@@ -2069,7 +2135,8 @@ CBA_DEF usize arena_allocated(Arena* arena) {
     return result;
 }
 
-CBA_DEF char* alloc_sprintf(const char* fmt, ...) {
+CBA_DEF char* alloc_sprintf(const char* fmt, ...)
+{
     char* result = NULL;
 
     uninit va_list args;
@@ -2087,15 +2154,18 @@ CBA_DEF char* alloc_sprintf(const char* fmt, ...) {
     return result;
 }
 
-CBA_DEF char* surround_dq(const char* cstr) {
+CBA_DEF char* surround_dq(const char* cstr)
+{
     return alloc_sprintf("\"%s\"", cstr);
 }
 
-CBA_DEF char* surround_sq(const char* cstr) {
+CBA_DEF char* surround_sq(const char* cstr)
+{
     return alloc_sprintf("'%s'", cstr);
 }
 
-CBA_DEF char* surround_bq(const char* cstr) {
+CBA_DEF char* surround_bq(const char* cstr)
+{
     return alloc_sprintf("`%s`", cstr);
 }
 
@@ -2105,7 +2175,8 @@ CBA_DEF char* surround_bq(const char* cstr) {
 
 // @mark: files
 
-static inline FileDescriptor _open_fd_for_read_write(const char* path) {
+static inline FileDescriptor _open_fd_for_read_write(const char* path)
+{
     FileDescriptor result = INVALID_HANDLE;
 
 #if CBA_WINDOWS
@@ -2123,19 +2194,23 @@ static inline FileDescriptor _open_fd_for_read_write(const char* path) {
         NULL
     );
 
-    if (fd != INVALID_HANDLE) {
+    if (fd != INVALID_HANDLE)
+    {
         result = (FileDescriptor)fd;
     }
-    else {
+    else
+    {
         verbose_print("failed to open file descriptor for \"%s\": %s", path, _os_error());
     }
 #else
     int fd = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
-    if (fd >= 0) {
+    if (fd >= 0)
+    {
         result = (FileDescriptor)fd;
     }
-    else {
+    else
+    {
         verbose_print("failed to open file descriptor for \"%s\": %s", path, _os_error());
     }
 #endif
@@ -2143,7 +2218,8 @@ static inline FileDescriptor _open_fd_for_read_write(const char* path) {
     return result;
 }
 
-static inline void _close_fd(FileDescriptor fd) {
+static inline void _close_fd(FileDescriptor fd)
+{
 #if CBA_WINDOWS
     CloseHandle(fd);
 #else
@@ -2151,7 +2227,8 @@ static inline void _close_fd(FileDescriptor fd) {
 #endif
 }
 
-static usize _seek_fd(FileDescriptor fd, b32 end) {
+static usize _seek_fd(FileDescriptor fd, b32 end)
+{
     usize result = 0;
 
     cba_assert(fd != INVALID_HANDLE, "cannot seek with an invalid file descriptor");
@@ -2167,7 +2244,8 @@ static usize _seek_fd(FileDescriptor fd, b32 end) {
     return result;
 }
 
-static isize _read_fd(FileDescriptor fd, void* memory, usize bytes) {
+static isize _read_fd(FileDescriptor fd, void* memory, usize bytes)
+{
     isize result = 0;
 
 #if CBA_WINDOWS
@@ -2175,10 +2253,12 @@ static isize _read_fd(FileDescriptor fd, void* memory, usize bytes) {
     uninit DWORD bytes_read;
     b32 success = ReadFile(fd, memory, (DWORD)bytes, &bytes_read, NULL);
 
-    if (success) {
+    if (success)
+    {
         result = (isize)bytes_read;
     }
-    else {
+    else
+    {
         result = -1;
     }
 #else
@@ -2188,7 +2268,8 @@ static isize _read_fd(FileDescriptor fd, void* memory, usize bytes) {
     return result;
 }
 
-CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
+CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths)
+{
     i32 result = 0;
 
 #if CBA_WINDOWS
@@ -2196,49 +2277,61 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
 
     HANDLE output_path_fd = CreateFileA(output_path_cstr, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
 
-    if (output_path_fd != INVALID_HANDLE_VALUE) {
+    if (output_path_fd != INVALID_HANDLE_VALUE)
+    {
         uninit FILETIME output_path_time;
         BOOL got_output_file_time = GetFileTime(output_path_fd, NULL, NULL, &output_path_time);
         CloseHandle(output_path_fd);
 
-        if (got_output_file_time) {
-            for (usize i = 0; i < input_paths.count; ++i) {
+        if (got_output_file_time)
+        {
+            for (usize i = 0; i < input_paths.count; ++i)
+            {
                 char* input_path_cstr = str_to_cstr(input_paths.items[i]);
 
                 HANDLE input_path_fd = CreateFileA(input_path_cstr, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
 
-                if (input_path_fd != INVALID_HANDLE_VALUE) {
+                if (input_path_fd != INVALID_HANDLE_VALUE)
+                {
                     uninit FILETIME input_path_time;
                     BOOL found_input_file_time = GetFileTime(input_path_fd, NULL, NULL, &input_path_time);
                     CloseHandle(input_path_fd);
 
-                    if (found_input_file_time) {
-                        if (CompareFileTime(&input_path_time, &output_path_time) == 1) {
+                    if (found_input_file_time)
+                    {
+                        if (CompareFileTime(&input_path_time, &output_path_time) == 1)
+                        {
                             result = 1;
                             break;
                         }
                     }
-                    else {
+                    else
+                    {
                         verbose_print("failed to stat input file \"%s\": %s", input_path_cstr, _os_error());
                         result = -1;
                     }
                 }
-                else {
+                else
+                {
                     verbose_print("failed to open input file \"%s\": %s", input_path_cstr, _os_error());
                     result = -1;
                 }
             }
         }
-        else {
+        else
+        {
             verbose_print("failed to stat output file \"%s\": %s", output_path_cstr, _os_error());
             result = -1;
         }
     }
-    else {
-        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+    else
+    {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND)
+        {
             result = 1;
         }
-        else {
+        else
+        {
             verbose_print("failed to open output file \"%s\": %s", output_path_cstr, _os_error());
             result = -1;
         }
@@ -2248,30 +2341,38 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
 
     uninit struct stat statbuf;
 
-    if (stat(output_path_cstr, &statbuf) >= 0) {
+    if (stat(output_path_cstr, &statbuf) >= 0)
+    {
         time_t output_path_time = statbuf.st_mtime;
 
-        for (usize i = 0; i < input_paths.count; ++i) {
+        for (usize i = 0; i < input_paths.count; ++i)
+        {
             char* input_path_cstr = str_to_cstr(input_paths.items[i]);
 
-            if (stat(input_path_cstr, &statbuf) >= 0) {
+            if (stat(input_path_cstr, &statbuf) >= 0)
+            {
                 time_t input_path_time = statbuf.st_mtime;
-                if (input_path_time > output_path_time) {
+                if (input_path_time > output_path_time)
+                {
                     result = 1;
                     break;
                 }
             }
-            else {
+            else
+            {
                 verbose_print("failed to stat input file \"%s\": %s", input_path_cstr, _os_error());
                 result = -1;
             }
         }
     }
-    else {
-        if (errno == ENOENT) {
+    else
+    {
+        if (errno == ENOENT)
+        {
             result = 1;
         }
-        else {
+        else
+        {
             verbose_print("failed to stat output file \"%s\": %s", output_path_cstr, _os_error());
             result = -1;
         }
@@ -2281,7 +2382,8 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths) {
     return result;
 }
 
-CBA_DEF i32 file_needs_rebuild(String output_path, String input_path) {
+CBA_DEF i32 file_needs_rebuild(String output_path, String input_path)
+{
     i32 result = false;
 
     StringArray arr = {0};
@@ -2292,23 +2394,27 @@ CBA_DEF i32 file_needs_rebuild(String output_path, String input_path) {
     return result;
 }
 
-CBA_DEF b32 file_create(const char* path) {
+CBA_DEF b32 file_create(const char* path)
+{
     b32 result = false;
 
     FILE* f = fopen(path, "w+");
 
-    if (f) {
+    if (f)
+    {
         result = true;
         fclose(f);
     }
-    else {
+    else
+    {
         verbose_print("failed to open file \"%s\": %s", path, _os_error());
     }
 
     return result;
 }
 
-CBA_DEF b32 file_move(const char* path, const char* new_path) {
+CBA_DEF b32 file_move(const char* path, const char* new_path)
+{
     b32 result = false;
 
 #if CBA_WINDOWS
@@ -2317,34 +2423,41 @@ CBA_DEF b32 file_move(const char* path, const char* new_path) {
     result = rename(path, new_path) == 0;
 #endif
 
-    if (!result) {
+    if (!result)
+    {
         verbose_print("failed to rename \"%s\" to \"%s\": %s", path, new_path, _os_error());
     }
 
     return result;
 }
 
-CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link) {
+CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link)
+{
     b32 result = false;
 
 #if CBA_WINDOWS
     result = CopyFileA(path, new_path, FALSE);
 
-    if (symbolic_link) {
+    if (symbolic_link)
+    {
         verbose_print("warning: cannot create symbolic links on windows!");
     }
 #elif CBA_MACOS
-    if (symbolic_link) {
+    if (symbolic_link)
+    {
         result = symlink(path, new_path) == 0;
     }
-    else {
+    else
+    {
         result = copyfile(path, new_path, NULL, COPYFILE_DATA) == 0;
     }
 #else
-    if (symbolic_link) {
+    if (symbolic_link)
+    {
         result = symlink(path, new_path) == 0;
     }
-    else {
+    else
+    {
         uninit isize size;
         FileDescriptor existing_fd = open(path, O_RDONLY, 0);
         FileDescriptor new_fd      = open(new_path, O_WRONLY | O_CREAT, 0666);
@@ -2363,7 +2476,8 @@ CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link)
     }
 #endif
 
-    if (!result) {
+    if (!result)
+    {
         verbose_print("failed to copy file \"%s\" to \"%s\": %s", path, new_path, _os_error());
     }
 
@@ -2371,12 +2485,14 @@ CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link)
 }
 
 #if !CBA_WINDOWS
-static inline int _rment(const char* path, const struct stat* st, int flags, struct FTW* ftwp) {
+static inline int _rment(const char* path, const struct stat* st, int flags, struct FTW* ftwp)
+{
     CBA_UNUSED(st); CBA_UNUSED(flags); CBA_UNUSED(ftwp);
 
     int result = remove(path);
         
-    if (result != 0) {
+    if (result != 0)
+    {
         verbose_print("failed to remove directory entry \"%s\": %s", path, _os_error());
     }
 
@@ -2384,19 +2500,23 @@ static inline int _rment(const char* path, const struct stat* st, int flags, str
 }
 #endif
 
-CBA_DEF b32 file_delete(const char* path) {
+CBA_DEF b32 file_delete(const char* path)
+{
     b32 result = false;
 
 #if CBA_WINDOWS
-    if (file_exists(path)) {
+    if (file_exists(path))
+    {
         FileKind kind = file_get_kind(path);
 
-        switch (kind) {
+        switch (kind)
+        {
             case FILE_KIND_DIRECTORY: {
                 // @todo: does this work recursively?
                 result = RemoveDirectoryA(path);
 
-                if (!result) {
+                if (!result)
+                {
                     verbose_print("failed to delete directory \"%s\": %s", path, _os_error());
                 }
             } break;
@@ -2406,7 +2526,8 @@ CBA_DEF b32 file_delete(const char* path) {
             case FILE_KIND_OTHER: {
                 result = DeleteFileA(path);
 
-                if (!result) {
+                if (!result)
+                {
                     verbose_print("failed to delete file \"%s\": %s", path, _os_error());
                 }
             } break;
@@ -2415,33 +2536,41 @@ CBA_DEF b32 file_delete(const char* path) {
         }
     }
 #else
-    if (file_exists(path)) {
+    if (file_exists(path))
+    {
         FileKind ft = file_get_kind(path);
 
         cba_assert(ft != FILE_KIND_UNKNOWN, "the file exists, so its type should have been recognised");
 
-        if (ft == FILE_KIND_DIRECTORY) {
+        if (ft == FILE_KIND_DIRECTORY)
+        {
             int r = nftw(path, _rment, 512, FTW_PHYS | FTW_DEPTH);
 
-            if (r == 0) {
+            if (r == 0)
+            {
                 result = true;
             }
-            else {
+            else
+            {
                 verbose_print("failed to recursively delete \"%s\": %s", path, _os_error());
             }
         } 
-        else {
+        else
+        {
             int r = remove(path);
 
-            if (r == 0) {
+            if (r == 0)
+            {
                 result = true;
             }
-            else {
+            else
+            {
                 verbose_print("failed to delete \"%s\": %s", path, _os_error());
             }
         }
     }
-    else {
+    else
+    {
         result = true;
     }
 #endif
@@ -2449,7 +2578,8 @@ CBA_DEF b32 file_delete(const char* path) {
     return result;
 }
 
-CBA_DEF b32 file_exists(const char* path) {
+CBA_DEF b32 file_exists(const char* path)
+{
     b32 result = false;
 
 #if CBA_WINDOWS
@@ -2461,34 +2591,43 @@ CBA_DEF b32 file_exists(const char* path) {
     return result;
 }
 
-CBA_DEF FileKind file_get_kind(const char* path) {
+CBA_DEF FileKind file_get_kind(const char* path)
+{
     FileKind result = FILE_KIND_UNKNOWN;
 
 #if CBA_WINDOWS
     DWORD attributes = GetFileAttributesA(path);
-    if (attributes != INVALID_FILE_ATTRIBUTES) {
+    if (attributes != INVALID_FILE_ATTRIBUTES)
+    {
         result = (attributes & FILE_ATTRIBUTE_DIRECTORY) ? FILE_KIND_DIRECTORY : FILE_KIND_REGULAR;
     }
-    else {
+    else
+    {
         verbose_print("failed to get file attributes for \"%s\": %s", path, _os_error());
     }
 #else
     uninit struct stat statbuf;
-    if (lstat(path, &statbuf) >= 0) {
-        if (S_ISREG(statbuf.st_mode)) {
+    if (lstat(path, &statbuf) >= 0)
+    {
+        if (S_ISREG(statbuf.st_mode))
+        {
             result = FILE_KIND_REGULAR;
         }
-        else if (S_ISDIR(statbuf.st_mode)) {
+        else if (S_ISDIR(statbuf.st_mode))
+        {
             result = FILE_KIND_DIRECTORY;
         }
-        else if (S_ISLNK(statbuf.st_mode)) {
+        else if (S_ISLNK(statbuf.st_mode))
+        {
             result = FILE_KIND_SYMLINK;
         }
-        else {
+        else
+        {
             result = FILE_KIND_OTHER;
         }
     }
-    else {
+    else
+    {
         verbose_print("failed to stat file \"%s\": %s", path, _os_error());
     }
 #endif
@@ -2496,27 +2635,32 @@ CBA_DEF FileKind file_get_kind(const char* path) {
     return result;
 }
 
-CBA_DEF usize file_length(const char* path) {
+CBA_DEF usize file_length(const char* path)
+{
     usize result = 0;
 
 #if CBA_WINDOWS
     uninit WIN32_FILE_ATTRIBUTE_DATA attribute_data;
-    if (GetFileAttributesExA(path, GetFileExInfoStandard, &attribute_data)) {
+    if (GetFileAttributesExA(path, GetFileExInfoStandard, &attribute_data))
+    {
 #if CBA_64_BIT
         result = ((usize)attribute_data.nFileSizeHigh << 32) | attribute_data.nFileSizeLow;
 #else
         result = attribute_data.nFileSizeLow;
 #endif
     }
-    else {
+    else
+    {
         verbose_print("failed to get file attributes for \"%s\": %s", path, _os_error());
     }
 #else
     uninit struct stat statbuf;
-    if (lstat(path, &statbuf) >= 0) {
+    if (lstat(path, &statbuf) >= 0)
+    {
         result = (usize)statbuf.st_size;
     }
-    else {
+    else
+    {
         verbose_print("failed to stat file \"%s\": %s", path, _os_error());
     }
 #endif
@@ -2524,7 +2668,8 @@ CBA_DEF usize file_length(const char* path) {
     return result;
 }
 
-CBA_DEF b32 file_read(const char* path, void* dest, usize bytes) {
+CBA_DEF b32 file_read(const char* path, void* dest, usize bytes)
+{
     b32 result = false;
 
     cba_assert(dest, "cannot read to NULL memory");
@@ -2532,53 +2677,64 @@ CBA_DEF b32 file_read(const char* path, void* dest, usize bytes) {
 
     FILE* f = fopen(path, "rb");
 
-    if (f) {
+    if (f)
+    {
         usize bytes_read = fread(dest, 1, bytes, f);
 
-        if (bytes_read == 0) {
+        if (bytes_read == 0)
+        {
             verbose_print("failed to read any memory from \"%s\": %s", path, _os_error());
         }
-        else {
+        else
+        {
             result = true;
         }
 
         fclose(f);
     }
-    else {
+    else
+    {
         verbose_print("failed to open file \"%s\": %s", path, _os_error());
     }
 
     return result;
 }
 
-CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append) {
+CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append)
+{
     b32 result = false;
 
     cba_assert(memory, "cannot write from NULL memory");
     cba_assert(bytes, "cannot write zero bytes");
 
     uninit FILE* f;
-    if (append) {
+    if (append)
+    {
         f = fopen(path, "a+b");
     }
-    else {
+    else
+    {
         f = fopen(path, "w+b");
     }
 
-    if (f) {
+    if (f)
+    {
         usize bytes_written = fwrite(memory, 1, bytes, f);
 
-        if (!bytes_written && !feof(f)) {
+        if (!bytes_written && !feof(f))
+        {
             verbose_print("failed to write memory to \"%s\": %s", path, _os_error());
         }
-        else {
+        else
+        {
             result = true;
         }
 
         fflush(f);
         fclose(f);
     }
-    else {
+    else
+    {
         verbose_print("failed to open file \"%s\": %s", path, _os_error());
     }
 
@@ -2586,13 +2742,16 @@ CBA_DEF b32 file_write(const char* path, void* memory, usize bytes, b32 append) 
 }
 
 #if CBA_WINDOWS
-CBA_INLINE b32 _create_dir(const char* path) {
+CBA_INLINE b32 _create_dir(const char* path)
+{
     b32 result = true;
 
-    if (!file_exists(path)) {
+    if (!file_exists(path))
+    {
         result = _mkdir(path) == 0;
 
-        if (!result) {
+        if (!result)
+        {
             verbose_print("failed to create directory \"%s\": %s", path, _os_error());
         }
     }
@@ -2600,13 +2759,16 @@ CBA_INLINE b32 _create_dir(const char* path) {
     return result;
 }
 #else
-CBA_INLINE b32 _create_dir(const char* path) {
+CBA_INLINE b32 _create_dir(const char* path)
+{
     b32 result = true;
 
-    if (!file_exists(path)) {
+    if (!file_exists(path))
+    {
         int res = mkdir(path, 0755);
 
-        if (res < 0) {
+        if (res < 0)
+        {
             cba_assert(errno != EEXIST, "the file should not exist, because it has already been checked");
             verbose_print("failed to create directory \"%s\": %s", path, _os_error());
             result = false;
@@ -2617,18 +2779,23 @@ CBA_INLINE b32 _create_dir(const char* path) {
 }
 #endif
 
-CBA_DEF b32 file_try_create_directory(const char* path) {
+CBA_DEF b32 file_try_create_directory(const char* path)
+{
     b32 result = true;
 
     String path_str = str_from_cstr(path);
 
-    if (!file_exists(path)) {
+    if (!file_exists(path))
+    {
         StringArray parent_paths = str_to_parent_paths(path_str);
 
-        if (parent_paths.items) {
-            for (usize i = 0; i < parent_paths.count; ++i) {
+        if (parent_paths.items)
+        {
+            for (usize i = 0; i < parent_paths.count; ++i)
+            {
                 char* path_cstr = (char*)str_to_cstr(parent_paths.items[i]);
-                if (!_create_dir(path_cstr)) {
+                if (!_create_dir(path_cstr))
+                {
                     result = false;
                     break;
                 }
@@ -2636,12 +2803,14 @@ CBA_DEF b32 file_try_create_directory(const char* path) {
 
             // @jcg: the above only creates parent paths: the top-level dir still needs to
             // be created.
-            if (result && !_create_dir((char*)path)) {
+            if (result && !_create_dir((char*)path))
+            {
                 result = false;
             }
         }
     }
-    else {
+    else
+    {
         verbose_print("directory \"%s\" already exists", path);
         result = true;
     }
@@ -2649,7 +2818,8 @@ CBA_DEF b32 file_try_create_directory(const char* path) {
     return result;
 }
 
-CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_directory_path) {
+CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_directory_path)
+{
     StringArray result = {0};
 
     String path_str = str_from_cstr(path);
@@ -2664,23 +2834,28 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
     uninit HANDLE file;
     String tmp = str_copy(path_str);
 
-    if (tmp.data[tmp.len - 1] != '\\') {
+    if (tmp.data[tmp.len - 1] != '\\')
+    {
         str_append_char(&tmp, '\\');
         str_append_null(&tmp);
     }
 
     file = FindFirstFileA(tmp.data, &find_data);
 
-    if (file != INVALID_HANDLE) {
-        do {
+    if (file != INVALID_HANDLE)
+    {
+        do
+        {
             String entry = str_from_cstr((const char*)find_data.cFileName);
 
             print("next file in dir: " stok, sfmt(entry));
 
-            if (include_directory_path) {
+            if (include_directory_path)
+            {
                 str_append_other(&entry, path_str);
 
-                if (!is_separator(path_str.data[path_str.len - 1])) {
+                if (!is_separator(path_str.data[path_str.len - 1]))
+                {
                     str_append_char(&entry, CBA_PATH_SEPARATOR);
                 }
             }
@@ -2688,13 +2863,15 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
             str_arr_append_str(&result, entry);
         } while (FindNextFileA(file, &find_data));
 
-        if (GetLastError() != ERROR_NO_MORE_FILES) {
+        if (GetLastError() != ERROR_NO_MORE_FILES)
+        {
             verbose_print("error getting next directory entry: %s", _os_error());
         }
 
         FindClose(file);
     }
-    else {
+    else
+    {
         verbose_print("failed to open directory \"%.*s\": %s", sfmt(path_str), _os_error());
     }
 #else
@@ -2703,21 +2880,26 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 
     struct dirent* dent = NULL;
 
-    while ((dent = readdir(d))) {
-        if ((dent->d_type == DT_LNK) || (dent->d_type == DT_DIR) || (dent->d_type == DT_REG)) {
+    while ((dent = readdir(d)))
+    {
+        if ((dent->d_type == DT_LNK) || (dent->d_type == DT_DIR) || (dent->d_type == DT_REG))
+        {
             String entry = str_alloc_with_cap(CBA_MAX_PATH);
 
-            if (include_directory_path) {
+            if (include_directory_path)
+            {
                 str_append_other(&entry, path_str);
 
-                if (!is_separator(path_str.data[path_str.len - 1])) {
+                if (!is_separator(path_str.data[path_str.len - 1]))
+                {
                     str_append_char(&entry, CBA_PATH_SEPARATOR);
                 }
             }
 
             str_append_chars(&entry, (char*)dent->d_name, (usize)dent->d_namlen);
 
-            if (!str_ends_with(entry, ".") && !str_ends_with(entry, "..")) {
+            if (!str_ends_with(entry, ".") && !str_ends_with(entry, ".."))
+            {
                 str_arr_append_str(&result, entry);
             }
         }
@@ -2738,39 +2920,49 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 #if CBA_WINDOWS
 // @jcg: windows needs some specific escaping of backslashes and quotes:
 // https://learn.microsoft.com/en-gb/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
-static inline String _cmd_flatten_win32(Command cmd) {
+static inline String _cmd_flatten_win32(Command cmd)
+{
     String result = {0};
 
     usize capacity = 1;
 
-    for (usize i = 0; i < cmd.count; ++i) {
+    for (usize i = 0; i < cmd.count; ++i)
+    {
         capacity += cmd.items[i].cap; 
     }
 
     // @todo: no longer needed?
     result = str_alloc_with_cap(capacity * 2);
 
-    for (usize i = 0; i < cmd.count; ++i) {
+    for (usize i = 0; i < cmd.count; ++i)
+    {
         String* arg = &cmd.items[i];
         cba_assert(arg->len, "argument should not be empty");
 
-        if (i != 0) {
+        if (i != 0)
+        {
             str_append_char(&result, ' ');
         }
 
-        if (str_find_first_of_any_in_cstr(*arg, " \t\n\v\"", true, NULL)) {
+        if (str_find_first_of_any_in_cstr(*arg, " \t\n\v\"", true, NULL))
+        {
             usize backslashes = 0;
             str_append_char(&result, '\"');
 
-            for (usize ii = 0; ii < arg->len; ++ii) {
+            for (usize ii = 0; ii < arg->len; ++ii)
+            {
                 char ch = arg->data[ii];
 
-                if (ch == '\\') {
+                if (ch == '\\')
+                {
                     backslashes += 1;
                 }
-                else {
-                    if (ch == '\"') {
-                        for (usize iii = 0; iii < (backslashes + 1); ++iii) {
+                else
+                {
+                    if (ch == '\"')
+                    {
+                        for (usize iii = 0; iii < (backslashes + 1); ++iii)
+                        {
                             str_append_char(&result, '\\');
                         }
                     }
@@ -2781,13 +2973,15 @@ static inline String _cmd_flatten_win32(Command cmd) {
                 str_append_char(&result, ch);
             }
 
-            for (usize ii = 0; ii < backslashes; ++ii) {
+            for (usize ii = 0; ii < backslashes; ++ii)
+            {
                 str_append_char(&result, '\\');
             }
 
             str_append_char(&result, '\"');
         }
-        else {
+        else
+        {
             str_append_other(&result, *arg);
         }
     }
@@ -2796,7 +2990,8 @@ static inline String _cmd_flatten_win32(Command cmd) {
 }
 #endif
 
-CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
+CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd)
+{
     ProcessID result = INVALID_HANDLE;
 
 #if CBA_WINDOWS
@@ -2828,58 +3023,72 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
         &process_info
     );
 
-    if (success) {
+    if (success)
+    {
         result = process_info.hProcess;
         CloseHandle(process_info.hThread);
     }
-    else {
+    else
+    {
         verbose_print("failed to create process: %s", _os_error());
     }
 #else
-    if (cmd.count >= 1) {
+    if (cmd.count >= 1)
+    {
         pid_t cpid = fork();
 
-        if (cpid < 0) {
+        if (cpid < 0)
+        {
             verbose_print("failed to fork child process: %s", _os_error());
         }
-        else if (cpid == 0) {
+        else if (cpid == 0)
+        {
             b32 streams_valid = true;
 
-            if (output_fd != INVALID_HANDLE) {
-                if (dup2(output_fd, STDERR_FILENO) < 0) {
+            if (output_fd != INVALID_HANDLE)
+            {
+                if (dup2(output_fd, STDERR_FILENO) < 0)
+                {
                     verbose_print("failed to create stderr for child process: %s", _os_error());
                     streams_valid = false;
                 }
-                if (streams_valid && dup2(output_fd, STDOUT_FILENO) < 0) {
+                if (streams_valid && dup2(output_fd, STDOUT_FILENO) < 0)
+                {
                     verbose_print("failed to create stdout for child process: %s", _os_error());
                     streams_valid = false;
                 }
             }
 
-            if (streams_valid) {
+            if (streams_valid)
+            {
                 // @jcg: this is the memory allocated to the child process' arguments, so
                 // it needs to be allocated permanently to outlive the child process.
                 char** arr = alloc_array(cmd.count + 1, char*);
-                for (usize i = 0; i < cmd.count; ++i) {
+                for (usize i = 0; i < cmd.count; ++i)
+                {
                     arr[i] = alloc_array(cmd.items[i].len + 1, char);
                     memcpy(arr[i], cmd.items[i].data, cmd.items[i].len);
                 }
 
                 int exec_result = execvp(arr[0], arr);
 
-                if (exec_result >= 0) {
+                if (exec_result >= 0)
+                {
                     result = (ProcessID)cpid;
                     verbose_print("spawned process from \"%s\"", cmd_flatten_to_cstr(cmd));
                 }
-                else {
+                else
+                {
                     verbose_print("failed to exec child process for \"%s\": %s", arr[0], _os_error());
                 }
             }
-            else {
+            else
+            {
                 kill(cpid, SIGKILL);
             }
         }
-        else {
+        else
+        {
             result = cpid;
         }
     }
@@ -2888,7 +3097,8 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd) {
     return result;
 }
 
-CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code) {
+CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code)
+{
     i32 result = 1;
 
     cba_assert(proc != INVALID_HANDLE, "cannot wait on invalid process");
@@ -2896,56 +3106,69 @@ CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code) {
 #if CBA_WINDOWS
     DWORD res = WaitForSingleObject(proc, INFINITE);
 
-    if (res != WAIT_FAILED) {
+    if (res != WAIT_FAILED)
+    {
         uninit DWORD exit_status;
-        if (GetExitCodeProcess(proc, &exit_status)) {
-            if (exit_status != 0) {
+        if (GetExitCodeProcess(proc, &exit_status))
+        {
+            if (exit_status != 0)
+            {
                 result = 0;
             }
 
-            if (exit_code) {
+            if (exit_code)
+            {
                 *exit_code = (int)exit_status;
             }
 
             CloseHandle(proc);
         }
-        else {
+        else
+        {
             verbose_print("failed to get child process exit status: %s", _os_error());
         }
     }
-    else {
+    else
+    {
         verbose_print("failed to wait on child process: %s", _os_error());
         result = -1;
     }
 #else
-    for (;;) {
+    for (;;)
+    {
         int wstatus = 0;
 
-        if (waitpid(proc, &wstatus, 0) < 0) {
+        if (waitpid(proc, &wstatus, 0) < 0)
+        {
             verbose_print("failed to wait on command with PID %d: %s", proc, _os_error());
             result = -1;
             break;
         }
 
-        if (WIFEXITED(wstatus)) {
+        if (WIFEXITED(wstatus))
+        {
             int exit_status = WEXITSTATUS(wstatus);
 
-            if (exit_status != 0) {
+            if (exit_status != 0)
+            {
                 result = 0;
             }
 
-            if (exit_code) {
+            if (exit_code)
+            {
                 *exit_code = exit_status;
             }
 
             break;
         }
 
-        if (WIFSIGNALED(wstatus)) {
+        if (WIFSIGNALED(wstatus))
+        {
             verbose_print("process with PID %d was terminated by signal %d", proc, WTERMSIG(wstatus));
             result = 0;
 
-            if (exit_code) {
+            if (exit_code)
+            {
                 *exit_code = 1;
             }
 
@@ -2959,17 +3182,20 @@ CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code) {
     return result;
 }
 
-CBA_DEF i32 __proc_wait_va(usize n, ...) {
+CBA_DEF i32 __proc_wait_va(usize n, ...)
+{
     i32 result = 1;
 
     uninit va_list args;
     va_start(args, n);
 
-    for (usize i = 0; i < n; ++i) {
+    for (usize i = 0; i < n; ++i)
+    {
         ProcessID arg = va_arg(args, ProcessID);
         i32 r = proc_wait(arg, NULL);
 
-        if (r != 1) {
+        if (r != 1)
+        {
             result = r;
             break;
         }
@@ -2986,15 +3212,18 @@ CBA_DEF i32 __proc_wait_va(usize n, ...) {
 
 // @mark: strings
 
-CBA_DEF void _str_resize(String* str, usize new_len) {
+CBA_DEF void _str_resize(String* str, usize new_len)
+{
     new_len = max(new_len, CBA_MIN_STRING_CAPACITY);
 
-    if (!str->cap) {
+    if (!str->cap)
+    {
         str->data = alloc_array(new_len + 1, char);
         str->cap = new_len;
     }
 
-    if (new_len > str->cap) {
+    if (new_len > str->cap)
+    {
         usize new_cap = next_pow2(new_len) + 1;
 
         char* new_data = alloc_array(new_cap, char);
@@ -3004,26 +3233,30 @@ CBA_DEF void _str_resize(String* str, usize new_len) {
     }
 }
 
-CBA_DEF void str_clear(String* str) {
+CBA_DEF void str_clear(String* str)
+{
     str->len = 0;
     memz(str->data, str->cap);
 }
 
-CBA_DEF String str_alloc(void) {
+CBA_DEF String str_alloc(void)
+{
     String result = {0};
     _str_resize(&result, CBA_MIN_STRING_CAPACITY);
 
     return result;
 }
 
-CBA_DEF String str_alloc_with_cap(usize cap) {
+CBA_DEF String str_alloc_with_cap(usize cap)
+{
     String result = {0};
     _str_resize(&result, cap);
 
     return result;
 }
 
-CBA_DEF String str_sprintf(const char* fmt, ...) {
+CBA_DEF String str_sprintf(const char* fmt, ...)
+{
     String result = {0};
 
     uninit va_list args;
@@ -3045,7 +3278,8 @@ CBA_DEF String str_sprintf(const char* fmt, ...) {
     return result;
 }
 
-CBA_DEF String str_from_cstr(const char* cstr) {
+CBA_DEF String str_from_cstr(const char* cstr)
+{
     usize len = (usize)strlen(cstr);
 
     String result = {0};
@@ -3057,7 +3291,8 @@ CBA_DEF String str_from_cstr(const char* cstr) {
     return result;
 }
 
-CBA_DEF String str_from_chars(char* buffer, usize count) {
+CBA_DEF String str_from_chars(char* buffer, usize count)
+{
     String result = {0};
     _str_resize(&result, count);
 
@@ -3067,7 +3302,8 @@ CBA_DEF String str_from_chars(char* buffer, usize count) {
     return result;
 }
 
-CBA_DEF String str_from_file(const char* file_path) {
+CBA_DEF String str_from_file(const char* file_path)
+{
     String result = {0};
 
     FILE* f = fopen(file_path, "rb");
@@ -3077,7 +3313,8 @@ CBA_DEF String str_from_file(const char* file_path) {
     usize len = (usize)ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    if (len) {
+    if (len)
+    {
         _str_resize(&result, len);
         result.len = len;
 
@@ -3090,7 +3327,8 @@ CBA_DEF String str_from_file(const char* file_path) {
     return result;
 }
 
-CBA_DEF String str_from_cwd(void) {
+CBA_DEF String str_from_cwd(void)
+{
     String result = str_alloc_with_cap(CBA_MAX_PATH);
 
 #if CBA_WINDOWS
@@ -3106,32 +3344,38 @@ CBA_DEF String str_from_cwd(void) {
     return result;
 }
 
-CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append) {
+CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append)
+{
     b32 result = false;
 
     FILE* f = fopen(path, append ? "ab" : "wb");
 
-    if (f) {
+    if (f)
+    {
         usize bytes_written = fwrite(s.data, 1, s.len, f);
 
-        if (!bytes_written && !feof(f)) {
+        if (!bytes_written && !feof(f))
+        {
             verbose_print("failed to write string to file \"%s\": %s", path, _os_error());
         }
-        else {
+        else
+        {
             result = true;
         }
 
         fflush(f);
         fclose(f);
     }
-    else {
+    else
+    {
         verbose_print("failed to write string to file \"%s\": %s", path, _os_error());
     }
 
     return result;
 }
 
-CBA_DEF String str_slice(String str, usize start, usize len) {
+CBA_DEF String str_slice(String str, usize start, usize len)
+{
     cba_assert((start + len) <= str.len,
                "string slice exceeds the string's length (start: %zu, len: %zu, string len: %zu)",
                start, len, str.len);
@@ -3145,7 +3389,8 @@ CBA_DEF String str_slice(String str, usize start, usize len) {
     return result;
 }
 
-CBA_DEF void str_shrink_left(String* str, usize shift) {
+CBA_DEF void str_shrink_left(String* str, usize shift)
+{
     cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
     str->data += shift;
@@ -3153,30 +3398,35 @@ CBA_DEF void str_shrink_left(String* str, usize shift) {
     str->cap -= shift;
 }
 
-CBA_DEF void str_shrink_right(String* str, usize shift) {
+CBA_DEF void str_shrink_right(String* str, usize shift)
+{
     cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
     str->len -= shift;
     str->cap -= shift;
 }
 
-CBA_DEF String str_path_file_name(String str, b32 include_extension) {
+CBA_DEF String str_path_file_name(String str, b32 include_extension)
+{
     String result = str;
 
     uninit usize separator_pos;
     b32 found_separator = str_find_last_char(str, '/',  &separator_pos) ||
                           str_find_last_char(str, '\\', &separator_pos);
 
-    if (found_separator) {
+    if (found_separator)
+    {
         // @jcg: +1 because the separator shouldn't be included.
         result.data = str.data + (separator_pos + 1);
         result.len  -= separator_pos + 1;
         result.cap  -= separator_pos + 1;
     }
 
-    if (!include_extension) {
+    if (!include_extension)
+    {
         uninit usize dot_pos;
-        if (str_find_last_char(str, '.', &dot_pos)) {
+        if (str_find_last_char(str, '.', &dot_pos))
+        {
             result.len -= str.len - dot_pos;
             result.cap -= str.len - dot_pos;
         }
@@ -3185,11 +3435,13 @@ CBA_DEF String str_path_file_name(String str, b32 include_extension) {
     return result;
 }
 
-CBA_DEF String str_path_file_extension(String str) {
+CBA_DEF String str_path_file_extension(String str)
+{
     String result = {0};
 
     uninit usize dot_pos;
-    if (str_find_last_char(str, '.', &dot_pos)) {
+    if (str_find_last_char(str, '.', &dot_pos))
+    {
         result.data = str.data + dot_pos;
         result.len = str.len - dot_pos;
         result.cap = str.cap - dot_pos;
@@ -3198,14 +3450,16 @@ CBA_DEF String str_path_file_extension(String str) {
     return result;
 }
 
-CBA_DEF String str_path_pwd(String str) {
+CBA_DEF String str_path_pwd(String str)
+{
     String result = {0};
 
     uninit usize separator_pos;
     b32 found_separator = str_find_last_char(str, '/', &separator_pos) ||
                           str_find_last_char(str, '\\', &separator_pos);
 
-    if (found_separator) {
+    if (found_separator)
+    {
         result.data = str.data;
         result.cap = result.len - separator_pos;
         result.len = separator_pos;
@@ -3214,7 +3468,8 @@ CBA_DEF String str_path_pwd(String str) {
     return result;
 }
 
-CBA_DEF String str_path_to_absolute(String str) {
+CBA_DEF String str_path_to_absolute(String str)
+{
     String result = str_alloc_with_cap(CBA_MAX_PATH);
 
     cba_assert(str.data[str.len] == '\0', "string is not null-terminated");
@@ -3222,12 +3477,14 @@ CBA_DEF String str_path_to_absolute(String str) {
 #if CBA_WINDOWS
     DWORD bytes = GetFullPathNameA(str.data, CBA_MAX_PATH, result.data, NULL);
 
-    if (!bytes) {
+    if (!bytes)
+    {
         verbose_print("failed to get absolute path name from " stok ": %s", sfmt(str), _os_error());
         str_clear(&result);
         str_copy_into(&result, str);
     }
-    else {
+    else
+    {
         result.len = bytes;
     }
 #else
@@ -3235,12 +3492,15 @@ CBA_DEF String str_path_to_absolute(String str) {
 
     char* p = realpath(str.data, result.data);
 
-    if (!p) {
-        if ((str.len > 0) && (str.data[0] == CBA_PATH_SEPARATOR)) {
+    if (!p)
+    {
+        if ((str.len > 0) && (str.data[0] == CBA_PATH_SEPARATOR))
+        {
             // the path appears absolute anyway.
             str_copy_into(&result, str);
         }
-        else {
+        else
+        {
             // the path appears relative, so prepending the cwd should work.
             String cwd = str_from_cwd();
             str_append_other(&result, cwd);
@@ -3249,7 +3509,8 @@ CBA_DEF String str_path_to_absolute(String str) {
             str_append_other(&result, str);
         }
     }
-    else {
+    else
+    {
         result.len = strlen(result.data);
     }
 #endif
@@ -3257,7 +3518,8 @@ CBA_DEF String str_path_to_absolute(String str) {
     return result;
 }
 
-CBA_DEF StringArray str_to_parent_paths(String path) {
+CBA_DEF StringArray str_to_parent_paths(String path)
+{
     StringArray result = {0};
 
     // "/a/b/c/d/file.txt" -> { "/a", "/a/b", "/a/b/c", "/a/b/c/d" }
@@ -3268,18 +3530,23 @@ CBA_DEF StringArray str_to_parent_paths(String path) {
 
     b32 last_was_separator = false;
 
-    for (usize i = 0; i < path.len; ++i) {
-        if (is_separator(path.data[i])) {
-            if (!last_was_separator) {
+    for (usize i = 0; i < path.len; ++i)
+    {
+        if (is_separator(path.data[i]))
+        {
+            if (!last_was_separator)
+            {
                 last_was_separator = true;
 
-                if (i != 0) {
+                if (i != 0)
+                {
                     String substr = str_copy(str_slice(path, 0, i));
                     str_arr_append_str(&result, substr);
                 }
             }
         }
-        else {
+        else
+        {
             last_was_separator = false;
         }
     }
@@ -3287,33 +3554,39 @@ CBA_DEF StringArray str_to_parent_paths(String path) {
     return result;
 }
 
-CBA_DEF String str_path_copy_file_name(String str, b32 include_extension) {
+CBA_DEF String str_path_copy_file_name(String str, b32 include_extension)
+{
     return str_copy(str_path_file_name(str, include_extension));
 }
 
-CBA_DEF String str_path_copy_file_extension(String str) {
+CBA_DEF String str_path_copy_file_extension(String str)
+{
     String result = {0};
     String slice = str_path_file_extension(str);
 
-    if (slice.data) {
+    if (slice.data)
+    {
         result = str_copy(slice);
     }
 
     return result;
 }
 
-CBA_DEF String str_path_copy_pwd(String str) {
+CBA_DEF String str_path_copy_pwd(String str)
+{
     String result = {0};
     String slice = str_path_pwd(str);
 
-    if (slice.data) {
+    if (slice.data)
+    {
         result = str_copy(slice);
     }
 
     return result;
 }
 
-CBA_DEF String str_copy(String str) {
+CBA_DEF String str_copy(String str)
+{
     String result = {0};
     _str_resize(&result, str.cap);
     result.len = str.len;
@@ -3323,20 +3596,23 @@ CBA_DEF String str_copy(String str) {
     return result;
 }
 
-CBA_DEF void str_copy_into(String* dest, String source) {
+CBA_DEF void str_copy_into(String* dest, String source)
+{
     _str_resize(dest, source.len);
 
     memcpy(dest->data, source.data, source.len);
     dest->len = source.len;
 }
 
-CBA_DEF void str_append_null(String* str) {
+CBA_DEF void str_append_null(String* str)
+{
     _str_resize(str, str->len + 1);
     str->data[str->len] = 0;
     str->len += 1;
 }
 
-CBA_DEF void str_append_line_ending(String* str) {
+CBA_DEF void str_append_line_ending(String* str)
+{
 #if CBA_WINDOWS
     char buf[] = { '\r', '\n' };
     str_append_chars(str, buf, sizeof(buf));
@@ -3345,13 +3621,15 @@ CBA_DEF void str_append_line_ending(String* str) {
 #endif
 }
 
-CBA_DEF void str_append_char(String* str, char ch) {
+CBA_DEF void str_append_char(String* str, char ch)
+{
     _str_resize(str, str->len + 1);
     str->data[str->len] = ch;
     str->len += 1;
 }
 
-CBA_DEF void str_append_cstr(String* str, const char* cstr) {
+CBA_DEF void str_append_cstr(String* str, const char* cstr)
+{
     usize len = (usize)strlen(cstr);
 
     _str_resize(str, str->len + len);
@@ -3359,19 +3637,22 @@ CBA_DEF void str_append_cstr(String* str, const char* cstr) {
     str->len += len;
 }
 
-CBA_DEF void str_append_chars(String* str, char* buffer, usize count) {
+CBA_DEF void str_append_chars(String* str, char* buffer, usize count)
+{
     _str_resize(str, str->len + count);
     memcpy(str->data + str->len, buffer, count);
     str->len += count;
 }
 
-CBA_DEF void str_append_other(String* str, String other) {
+CBA_DEF void str_append_other(String* str, String other)
+{
     _str_resize(str, str->len + other.len);
     memcpy(str->data + str->len, other.data, other.len);
     str->len += other.len;
 }
 
-CBA_DEF void str_appendf(String* str, const char* fmt, ...) {
+CBA_DEF void str_appendf(String* str, const char* fmt, ...)
+{
     uninit va_list args;
     va_start(args, fmt);
 
@@ -3385,23 +3666,30 @@ CBA_DEF void str_appendf(String* str, const char* fmt, ...) {
     va_end(args);
 }
 
-CBA_DEF void str_to_lower(String* str) {
-    for (usize i = 0; i < str->len; ++i) {
-        if (is_upper(str->data[i])) {
+CBA_DEF void str_to_lower(String* str)
+{
+    for (usize i = 0; i < str->len; ++i)
+    {
+        if (is_upper(str->data[i]))
+        {
             str->data[i] ^= 0x20;
         }
     }
 }
 
-CBA_DEF void str_to_upper(String* str) {
-    for (usize i = 0; i < str->len; ++i) {
-        if (is_lower(str->data[i])) {
+CBA_DEF void str_to_upper(String* str)
+{
+    for (usize i = 0; i < str->len; ++i)
+    {
+        if (is_lower(str->data[i]))
+        {
             str->data[i] ^= 0x20;
         }
     }
 }
 
-CBA_DEF void str_lshift(String* str, usize start, usize shift) {
+CBA_DEF void str_lshift(String* str, usize start, usize shift)
+{
     if (!shift) return;
 
     cba_assert(start <= str->len,
@@ -3411,7 +3699,8 @@ CBA_DEF void str_lshift(String* str, usize start, usize shift) {
                "string should would underflow (start: %zu, shift: %zu)",
                start, shift);
 
-    for (usize i = start; i < str->len; ++i) {
+    for (usize i = start; i < str->len; ++i)
+    {
         str->data[i - shift] = str->data[i];
     }
 
@@ -3420,7 +3709,8 @@ CBA_DEF void str_lshift(String* str, usize start, usize shift) {
     memz(str->data + str->len, shift);
 }
 
-CBA_DEF void str_rshift(String* str, usize start, usize shift) {
+CBA_DEF void str_rshift(String* str, usize start, usize shift)
+{
     if (!shift) return;
 
     cba_assert(start <= str->len,
@@ -3432,7 +3722,8 @@ CBA_DEF void str_rshift(String* str, usize start, usize shift) {
     usize new_len = str->len + shift;
     usize end = start + shift;
 
-    for (usize i = (new_len - 1); i >= end; --i) {
+    for (usize i = (new_len - 1); i >= end; --i)
+    {
         str->data[i] = str->data[i - shift];
     }
 
@@ -3440,48 +3731,58 @@ CBA_DEF void str_rshift(String* str, usize start, usize shift) {
     str->len = new_len;
 }
 
-CBA_DEF void str_insert_char(String* str, usize at, char ch) {
+CBA_DEF void str_insert_char(String* str, usize at, char ch)
+{
     str_rshift(str, at, 1);
     str->data[at] = ch;
 }
 
-CBA_DEF void str_insert_other(String* str, usize at, String other) {
+CBA_DEF void str_insert_other(String* str, usize at, String other)
+{
     str_rshift(str, at, other.len);
     memcpy(str->data + at, other.data, other.len);
 }
 
-CBA_DEF void str_insert_cstr(String* str, usize at, const char* cstr) {
+CBA_DEF void str_insert_cstr(String* str, usize at, const char* cstr)
+{
     usize len = (usize)strlen(cstr);
     str_rshift(str, at, len);
     memcpy(str->data + at, cstr, len);
 }
 
-CBA_DEF void str_remove(String* str, usize at) {
+CBA_DEF void str_remove(String* str, usize at)
+{
     cba_assert(str->len > 0, "tried to remove from an empty string (zero length)");
     str_lshift(str, at + 1, 1);
 }
 
-CBA_DEF void str_remove_range(String* str, usize start, usize end) {
+CBA_DEF void str_remove_range(String* str, usize start, usize end)
+{
     cba_assert(str->len > 0, "tried to remove from an empty string (zero length)");
     cba_assert(end >= start, "incorrect removal range (start: %zu, end: %zu)", start, end);
 
     usize count = end - start;
-    if (count > end) {
+    if (count > end)
+    {
         count = end;
     }
 
     str_lshift(str, end, count);
 }
 
-CBA_DEF void str_replace_chars(String* str, char from, char to) {
-    for (usize i = 0; i < str->len; ++i) {
-        if (str->data[i] == from) {
+CBA_DEF void str_replace_chars(String* str, char from, char to)
+{
+    for (usize i = 0; i < str->len; ++i)
+    {
+        if (str->data[i] == from)
+        {
             str->data[i] = to;
         }
     }
 }
 
-CBA_DEF void str_replace_others(String* str, String from, String to) {
+CBA_DEF void str_replace_others(String* str, String from, String to)
+{
     if (!from.len || (str->len < from.len)) return;
 
     b32 left_shift = to.len < from.len;
@@ -3491,36 +3792,44 @@ CBA_DEF void str_replace_others(String* str, String from, String to) {
 
     usize pos = 0;
 
-    while (pos <= (str->len - from.len)) {
+    while (pos <= (str->len - from.len))
+    {
         b32 matched = true;
 
-        for (usize i = 0; i < from.len; ++i) {
-            if (str->data[pos + i] != from.data[i]) {
+        for (usize i = 0; i < from.len; ++i)
+        {
+            if (str->data[pos + i] != from.data[i])
+            {
                 matched = false;
                 break;
             }
         }
 
-        if (matched) {
+        if (matched)
+        {
             usize shift_start = pos + from.len;
 
-            if (left_shift) {
+            if (left_shift)
+            {
                 str_lshift(str, shift_start, shift_amount);
             }
-            else {
+            else
+            {
                 str_rshift(str, shift_start, shift_amount);
             }
 
             memcpy(str->data + pos, to.data, to.len);
             pos += to.len;
         }
-        else {
+        else
+        {
             pos += 1;
         }
     }
 }
 
-CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to) {
+CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to)
+{
     usize from_len = (usize)strlen(from);
     usize to_len = (usize)strlen(to);
 
@@ -3533,36 +3842,44 @@ CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to) {
 
     usize pos = 0;
 
-    while (pos <= (str->len - from_len)) {
+    while (pos <= (str->len - from_len))
+    {
         b32 matched = true;
 
-        for (usize i = 0; i < from_len; ++i) {
-            if (str->data[pos + i] != from[i]) {
+        for (usize i = 0; i < from_len; ++i)
+        {
+            if (str->data[pos + i] != from[i])
+            {
                 matched = false;
                 break;
             }
         }
 
-        if (matched) {
+        if (matched)
+        {
             usize shift_start = pos + from_len;
 
-            if (left_shift) {
+            if (left_shift)
+            {
                 str_lshift(str, shift_start, shift_amount);
             }
-            else {
+            else
+            {
                 str_rshift(str, shift_start, shift_amount);
             }
 
             memcpy(str->data + pos, to, to_len);
             pos += to_len;
         }
-        else {
+        else
+        {
             pos += 1;
         }
     }
 }
 
-CBA_DEF b32 str_trim_chars(String* str, const char* delims) {
+CBA_DEF b32 str_trim_chars(String* str, const char* delims)
+{
     b32 result = false;
 
     if (!str->len) return false;
@@ -3572,11 +3889,14 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims) {
     isize start = 0;
     isize end = str->len - 1;
 
-    for (; start < (isize)str->len; ++start) {
+    for (; start < (isize)str->len; ++start)
+    {
         b32 found = false;
 
-        for (usize c = 0; c < num_delims; ++c) {
-            if (str->data[start] == delims[c]) {
+        for (usize c = 0; c < num_delims; ++c)
+        {
+            if (str->data[start] == delims[c])
+            {
                 found = true;
                 result = true;
                 break;
@@ -3586,11 +3906,14 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims) {
         if (!found) break;
     }
 
-    for (; end > start; --end) {
+    for (; end > start; --end)
+    {
         b32 found = false;
 
-        for (usize c = 0; c < num_delims; ++c) {
-            if (str->data[end] == delims[c]) {
+        for (usize c = 0; c < num_delims; ++c)
+        {
+            if (str->data[end] == delims[c])
+            {
                 found = true;
                 result = true;
                 break;
@@ -3606,25 +3929,32 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims) {
     return result;
 }
 
-CBA_DEF b32 str_trim_whitespace(String* str) {
+CBA_DEF b32 str_trim_whitespace(String* str)
+{
     return str_trim_chars(str, CBA_WHITESPACE_CHARS);
 }
 
-CBA_DEF b32 str_trim_null(String* str) {
+CBA_DEF b32 str_trim_null(String* str)
+{
     b32 result = false;
 
-    if (str->len) {
+    if (str->len)
+    {
         isize start = 0;
         isize end = str->len - 1;
 
-        for (; start < (isize)str->len; ++start) {
-            if (str->data[start] != '\0') {
+        for (; start < (isize)str->len; ++start)
+        {
+            if (str->data[start] != '\0')
+            {
                 break;
             }
         }
 
-        for (; end > start; --end) {
-            if (str->data[end] != '\0') {
+        for (; end > start; --end)
+        {
+            if (str->data[end] != '\0')
+            {
                 break;
             }
         }
@@ -3636,7 +3966,8 @@ CBA_DEF b32 str_trim_null(String* str) {
     return result;
 }
 
-CBA_DEF StringArray str_split_by(String str, char delim) {
+CBA_DEF StringArray str_split_by(String str, char delim)
+{
     StringArray result = {0};
 
     CBA_UNUSED(str); CBA_UNUSED(delim);
@@ -3646,15 +3977,18 @@ CBA_DEF StringArray str_split_by(String str, char delim) {
     return result;
 }
 
-CBA_DEF StringArray str_split_lines(String str) {
+CBA_DEF StringArray str_split_lines(String str)
+{
     StringArray result = {0};
 
     String tmp = {0};
 
-    while (str_chop_up_to_char(&str, &tmp, '\n')) {
+    while (str_chop_up_to_char(&str, &tmp, '\n'))
+    {
         String s = str_copy(tmp);
 
-        if ((s.len > 1) && (s.data[s.len - 2] == '\r')) {
+        if ((s.len > 1) && (s.data[s.len - 2] == '\r'))
+        {
             s.len -= 1;
         }
 
@@ -3662,89 +3996,106 @@ CBA_DEF StringArray str_split_lines(String str) {
 
         usize shift = 0;
 
-        while ((shift < str.len) && ((str.data[shift] == '\r') || (str.data[shift] == '\n'))) {
+        while ((shift < str.len) && ((str.data[shift] == '\r') || (str.data[shift] == '\n')))
+        {
             shift += 1;
         }
 
         str_shrink_left(&str, shift);
     }
 
-    if (!result.count) {
+    if (!result.count)
+    {
         str_arr_append_str(&result, str);
     }
 
     return result;
 }
 
-CBA_DEF b32 str_eq(String a, String b) {
+CBA_DEF b32 str_eq(String a, String b)
+{
     return (a.len == b.len) && (memcmp(a.data, b.data, a.len) == 0);
 }
 
-CBA_DEF b32 str_eq_cstr(String str, const char* cstr) {
+CBA_DEF b32 str_eq_cstr(String str, const char* cstr)
+{
     return (str.len == (usize)strlen(cstr)) && (memcmp(str.data, cstr, str.len) == 0);
 }
 
-CBA_DEF b32 str_eq_ignoring_case(String a, String b) {
+CBA_DEF b32 str_eq_ignoring_case(String a, String b)
+{
     b32 result = true;
 
-    if (a.len == b.len) {
-        for (usize i = 0; i < a.len; ++i) {
+    if (a.len == b.len)
+    {
+        for (usize i = 0; i < a.len; ++i)
+        {
             char cha = a.data[i];
             char chb = b.data[i];
 
             b32 matches = (cha == chb) ||
                           (is_alpha(cha) && is_alpha(chb) && ((cha ^ 0x20) == chb));
 
-            if (!matches) {
+            if (!matches)
+            {
                 result = false;
                 break;
             }
         }
     }
-    else {
+    else
+    {
         result = false;
     }
 
     return result;
 }
 
-CBA_DEF b32 str_eq_cstr_ignoring_case(String str, const char* cstr) {
+CBA_DEF b32 str_eq_cstr_ignoring_case(String str, const char* cstr)
+{
     b32 result = true;
 
     usize b_len = (usize)strlen(cstr);
 
-    if (str.len == b_len) {
-        for (usize i = 0; i < str.len; ++i) {
+    if (str.len == b_len)
+    {
+        for (usize i = 0; i < str.len; ++i)
+        {
             char cha = str.data[i];
             char chb = cstr[i];
 
             b32 matches = (cha == chb) ||
                           (is_alpha(cha) && is_alpha(chb) && ((cha ^ 0x20) == chb));
 
-            if (!matches) {
+            if (!matches)
+            {
                 result = false;
                 break;
             }
         }
     }
-    else {
+    else
+    {
         result = false;
     }
 
     return result;
 }
 
-CBA_DEF b32 str_starts_with(String str, const char* cstr) {
+CBA_DEF b32 str_starts_with(String str, const char* cstr)
+{
     usize len = (usize)strlen(cstr);
     return (str.len >= len) && (memcmp(str.data, cstr, len) == 0);
 }
 
-CBA_DEF b32 str_ends_with(String str, const char* cstr) {
+CBA_DEF b32 str_ends_with(String str, const char* cstr)
+{
     b32 result = false;
 
     usize len = (usize)strlen(cstr);
 
-    if (len <= str.len) {
+    if (len <= str.len)
+    {
         u8* ptr = (u8*)(str.data + (str.len - len));
         result = memcmp(ptr, cstr, len) == 0;
     }
@@ -3752,22 +4103,28 @@ CBA_DEF b32 str_ends_with(String str, const char* cstr) {
     return result;
 }
 
-CBA_DEF b32 str_find_first_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_first_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usize* where)
+{
     return str_find_first_of_any(haystack, needles, (usize)strlen(needles), case_sensitive, where);
 }
 
-CBA_DEF b32 str_find_first_of_any(String haystack, const char* needles, usize count, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_first_of_any(String haystack, const char* needles, usize count, b32 case_sensitive, usize* where)
+{
     b32 result = false;
 
-    for (usize i = 0; i < haystack.len; ++i) {
-        for (usize ii = 0; ii < count; ++ii) {
+    for (usize i = 0; i < haystack.len; ++i)
+    {
+        for (usize ii = 0; ii < count; ++ii)
+        {
             char a = haystack.data[i];
             char b = needles[ii];
 
-            if ((a == b) || (!case_sensitive && is_alpha(a) && is_alpha(b) && ((a ^ 0x20) == b))) {
+            if ((a == b) || (!case_sensitive && is_alpha(a) && is_alpha(b) && ((a ^ 0x20) == b)))
+            {
                 result = true;
 
-                if (where) {
+                if (where)
+                {
                     *where = i;
                 }
 
@@ -3781,24 +4138,30 @@ outer:
     return result;
 }
 
-CBA_DEF b32 str_find_last_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_last_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usize* where)
+{
     return str_find_last_of_any(haystack, needles, (usize)strlen(needles), case_sensitive, where);
 }
 
-CBA_DEF b32 str_find_last_of_any(String haystack, const char* needles, usize count, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_last_of_any(String haystack, const char* needles, usize count, b32 case_sensitive, usize* where)
+{
     b32 result = false;
 
-    for (usize i = 0; i < haystack.len; ++i) {
+    for (usize i = 0; i < haystack.len; ++i)
+    {
         usize idx = haystack.len - i - 1;
 
-        for (usize ii = 0; ii < count; ++ii) {
+        for (usize ii = 0; ii < count; ++ii)
+        {
             char a = haystack.data[idx];
             char b = needles[ii];
 
-            if ((a == b) || (!case_sensitive && is_alpha(a) && is_alpha(b) && ((a ^ 0x20) == b))) {
+            if ((a == b) || (!case_sensitive && is_alpha(a) && is_alpha(b) && ((a ^ 0x20) == b)))
+            {
                 result = true;
 
-                if (where) {
+                if (where)
+                {
                     *where = idx;
                 }
 
@@ -3812,50 +4175,62 @@ outer:
     return result;
 }
 
-CBA_DEF b32 str_find_first_char(String haystack, char needle, usize* where) {
+CBA_DEF b32 str_find_first_char(String haystack, char needle, usize* where)
+{
     return str_find_first_char_from(haystack, needle, 0, where);
 }
 
-CBA_DEF b32 str_find_last_char(String haystack, char needle, usize* where) {
+CBA_DEF b32 str_find_last_char(String haystack, char needle, usize* where)
+{
     return haystack.len && str_find_last_char_from(haystack, needle, haystack.len - 1, where);
 }
 
-CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, usize* where)
+{
     return str_find_first_other_from(haystack, needle, 0, case_sensitive, where);
 }
 
-CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, usize* where)
+{
     // @todo: could be implemented in terms of str_find_last_other_from?
     b32 result = false;
 
-    if (haystack.len && needle.len && (haystack.len > needle.len)) {
+    if (haystack.len && needle.len && (haystack.len > needle.len))
+    {
         // @todo: this might be off by one
         isize off = haystack.len - needle.len;
 
-        do {
+        do
+        {
             b32 mismatch = false;
 
-            for (usize i = 0; i < needle.len; ++i) {
+            for (usize i = 0; i < needle.len; ++i)
+            {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
 
-                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
+                if (case_sensitive || !is_alpha(a) || !is_alpha(b))
+                {
                     mismatch = a != b;
                 }
-                else {
+                else
+                {
                     // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
                     mismatch = (a != b) && ((a ^ 0x20) != b);
                 }
 
-                if (mismatch) {
+                if (mismatch)
+                {
                     break;
                 }
             }
 
-            if (!mismatch) {
+            if (!mismatch)
+            {
                 result = true;
 
-                if (where) {
+                if (where)
+                {
                     *where = off;
                 }
 
@@ -3869,7 +4244,8 @@ CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensiti
     return result;
 }
 
-CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, usize* where)
+{
     uninit b32 result;
 
     String needle_str = str_from_cstr(needle);
@@ -3878,7 +4254,8 @@ CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_se
     return result;
 }
 
-CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, usize* where)
+{
     uninit b32 result;
 
     String needle_str = str_from_cstr(needle);
@@ -3887,16 +4264,20 @@ CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sen
     return result;
 }
 
-CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, usize* where) {
+CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, usize* where)
+{
     cba_assert(from < haystack.len,
                "cannot find outside of string's bounds (len: %zu, from: %zu)",
                haystack.len, from);
 
     b32 result = false;
 
-    for (usize i = from; i < haystack.len; ++i) {
-        if (haystack.data[i] == needle) {
-            if (where) {
+    for (usize i = from; i < haystack.len; ++i)
+    {
+        if (haystack.data[i] == needle)
+        {
+            if (where)
+            {
                 *where = i;
             }
 
@@ -3908,19 +4289,24 @@ CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usize from, u
     return result;
 }
 
-CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, usize* where) {
+CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, usize* where)
+{
     cba_assert(from < haystack.len,
                "cannot find outside of string's bounds (len: %zu, from: %zu)",
                haystack.len, from);
 
     b32 result = false;
 
-    if (haystack.len) {
-        for (usize i = 0; i <= from; ++i) {
+    if (haystack.len)
+    {
+        for (usize i = 0; i <= from; ++i)
+        {
             usize idx = haystack.len - i - 1;
 
-            if (haystack.data[idx] == needle) {
-                if (where) {
+            if (haystack.data[idx] == needle)
+            {
+                if (where)
+                {
                     *where = idx;
                 }
 
@@ -3933,11 +4319,14 @@ CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usize from, us
     return result;
 }
 
-CBA_DEF u64 str_count_chars(String haystack, char needle) {
+CBA_DEF u64 str_count_chars(String haystack, char needle)
+{
     u64 result = 0;
 
-    for (usize i = 0; i < haystack.len; ++i) {
-        if (haystack.data[i] == needle) {
+    for (usize i = 0; i < haystack.len; ++i)
+    {
+        if (haystack.data[i] == needle)
+        {
             result += 1;
         }
     }
@@ -3945,39 +4334,48 @@ CBA_DEF u64 str_count_chars(String haystack, char needle) {
     return result;
 }
 
-CBA_DEF b32 str_contains_char(String haystack, char needle) {
+CBA_DEF b32 str_contains_char(String haystack, char needle)
+{
     return str_find_first_char(haystack, needle, NULL);
 }
 
-CBA_DEF b32 str_contains_cstr(String haystack, const char* needle, b32 case_sensitive) {
+CBA_DEF b32 str_contains_cstr(String haystack, const char* needle, b32 case_sensitive)
+{
     return str_find_first_cstr(haystack, needle, case_sensitive, NULL);
 }
 
-CBA_DEF b32 str_contains_other(String haystack, String needle, b32 case_sensitive) {
+CBA_DEF b32 str_contains_other(String haystack, String needle, b32 case_sensitive)
+{
     return str_find_first_other(haystack, needle, case_sensitive, NULL);
 }
 
-CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where)
+{
     // @todo: potentially an off-by-one when the needle as at the end of the string?
     cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
 
     b32 result = false;
 
-    if (haystack.len && needle.len && (haystack.len > needle.len)) {
+    if (haystack.len && needle.len && (haystack.len > needle.len))
+    {
         usize iters = haystack.len - needle.len - from + 1;
         usize off = from;
 
-        do {
+        do
+        {
             b32 mismatch = false;
 
-            for (usize i = 0; i < needle.len; ++i) {
+            for (usize i = 0; i < needle.len; ++i)
+            {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
 
-                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
+                if (case_sensitive || !is_alpha(a) || !is_alpha(b))
+                {
                     mismatch = a != b;
                 }
-                else {
+                else
+                {
                     // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
                     mismatch = (a != b) && ((a ^ 0x20) != b);
                 }
@@ -3985,10 +4383,12 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from
                 if (mismatch) break;
             }
 
-            if (!mismatch) {
+            if (!mismatch)
+            {
                 result = true;
 
-                if (where) {
+                if (where)
+                {
                     *where = off;
                 }
 
@@ -4002,38 +4402,47 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usize from
     return result;
 }
 
-CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from, b32 case_sensitive, usize* where)
+{
     cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
 
     b32 result = false;
 
-    if (haystack.len && needle.len && (haystack.len > needle.len)) {
+    if (haystack.len && needle.len && (haystack.len > needle.len))
+    {
         isize off = haystack.len - needle.len;
 
-        do {
+        do
+        {
             b32 mismatch = false;
 
-            for (usize i = from; i < needle.len; ++i) {
+            for (usize i = from; i < needle.len; ++i)
+            {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
 
-                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
+                if (case_sensitive || !is_alpha(a) || !is_alpha(b))
+                {
                     mismatch = a != b;
                 }
-                else {
+                else
+                {
                     // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
                     mismatch = (a != b) && ((a ^ 0x20) != b);
                 }
 
-                if (mismatch) {
+                if (mismatch)
+                {
                     break;
                 }
             }
 
-            if (!mismatch) {
+            if (!mismatch)
+            {
                 result = true;
 
-                if (where) {
+                if (where)
+                {
                     *where = off;
                 }
 
@@ -4047,7 +4456,8 @@ CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usize from,
     return result;
 }
 
-CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where)
+{
     b32 result = false;
 
     String needle_str = str_from_cstr(needle);
@@ -4056,7 +4466,8 @@ CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usize 
     return result;
 }
 
-CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where) {
+CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usize from, b32 case_sensitive, usize* where)
+{
     b32 result = false;
 
     String needle_str = str_from_cstr(needle);
@@ -4065,31 +4476,38 @@ CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usize f
     return result;
 }
 
-CBA_DEF u64 str_count_cstrs(String haystack, const char* needle, b32 case_sensitive) {
+CBA_DEF u64 str_count_cstrs(String haystack, const char* needle, b32 case_sensitive)
+{
     String needle_str = str_from_cstr(needle);
     u64 result = str_count_others(haystack, needle_str, case_sensitive);
 
     return result;
 }
 
-CBA_DEF u64 str_count_others(String haystack, String needle, b32 case_sensitive) {
+CBA_DEF u64 str_count_others(String haystack, String needle, b32 case_sensitive)
+{
     u64 result = 0;
 
-    if (haystack.len > needle.len) {
+    if (haystack.len > needle.len)
+    {
         usize max_iters = haystack.len - needle.len;
         usize off = 0;
 
-        do {
+        do
+        {
             b32 mismatch = false;
 
-            for (usize i = 0; i < needle.len; ++i) {
+            for (usize i = 0; i < needle.len; ++i)
+            {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
 
-                if (case_sensitive || !is_alpha(a) || !is_alpha(b)) {
+                if (case_sensitive || !is_alpha(a) || !is_alpha(b))
+                {
                     mismatch = a != b;
                 }
-                else {
+                else
+                {
                     // @jcg: xor-ing an alphabetic ascii character with 32 (0x20) flips its case.
                     mismatch = (a != b) && ((a ^ 0x20) != b);
                 }
@@ -4097,10 +4515,12 @@ CBA_DEF u64 str_count_others(String haystack, String needle, b32 case_sensitive)
                 if (mismatch) break;
             }
 
-            if (mismatch) {
+            if (mismatch)
+            {
                 off += 1;
             }
-            else {
+            else
+            {
                 result += 1;
                 off += needle.len;
             }
@@ -4110,7 +4530,8 @@ CBA_DEF u64 str_count_others(String haystack, String needle, b32 case_sensitive)
     return result;
 }
 
-CBA_DEF b32 str_parse_to_i64(String str, i64* dest) {
+CBA_DEF b32 str_parse_to_i64(String str, i64* dest)
+{
     b32 result = true;
 
     i64 sign = 1;
@@ -4118,7 +4539,8 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest) {
     b32 truncated = false;
     b32 found_digit = false;
 
-    for (usize i = 0; i < str.len; ++i) {
+    for (usize i = 0; i < str.len; ++i)
+    {
         b32 is_digit = is_numeric(str.data[i]);
         b32 is_decimal = is_decimal(str.data[i]);
 
@@ -4126,52 +4548,65 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest) {
         b32 is_min = str.data[i] == '-';
         b32 is_sign = is_pos || is_min;
 
-        if (is_sign) {
-            if (i > 0) {
+        if (is_sign)
+        {
+            if (i > 0)
+            {
                 result = false;
                 break;
             }
 
-            if (is_min) {
+            if (is_min)
+            {
                 sign = -1;
             }
 
             pos = 1;
         }
-        else {
-            if (is_decimal) {
-                if (!truncated) {
+        else
+        {
+            if (is_decimal)
+            {
+                if (!truncated)
+                {
                     str.len = i;
                     truncated = true;
                 }
             }
-            else if (!is_digit) {
+            else if (!is_digit)
+            {
                 result = false;
                 break;
             }
 
-            if (!found_digit) {
-                if (str.data[i] == '0') {
+            if (!found_digit)
+            {
+                if (str.data[i] == '0')
+                {
                     pos = i;
                 }
-                else {
+                else
+                {
                     found_digit = true;
                 }
             }
         }
     }
 
-    if (result) {
+    if (result)
+    {
         usize start = (sign == -1) ? pos : (pos + 1);
 
         i64 factor = 1;
-        for (usize i = start; i < (str.len - pos); ++i) {
+        for (usize i = start; i < (str.len - pos); ++i)
+        {
             factor *= 10;
         }
 
         i64 value = 0;
 
-        while (pos < str.len) {
+        while (pos < str.len)
+        {
             i64 digit = (i64)(str.data[pos] - '0');
             value += digit * factor;
 
@@ -4185,7 +4620,8 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest) {
     return result;
 }
 
-CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
+CBA_DEF b32 str_parse_to_f64(String str, f64* dest)
+{
     // @todo: parsing for inf/nan
     b32 result = true;
 
@@ -4194,7 +4630,8 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
     i64 decimal_idx = -1;
     b32 found_digit = false;
 
-    for (usize i = 0; i < str.len; ++i) {
+    for (usize i = 0; i < str.len; ++i)
+    {
         b32 is_digit = is_numeric(str.data[i]);
         b32 is_decimal = is_decimal(str.data[i]);
 
@@ -4202,8 +4639,10 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
         b32 is_min = str.data[i] == '-';
         b32 is_sign = is_pos || is_min;
 
-        if (is_sign) {
-            if (i > 0) {
+        if (is_sign)
+        {
+            if (i > 0)
+            {
                 result = false;
                 break;
             }
@@ -4211,54 +4650,71 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
             if (is_min) sign = -1.0;
             pos = 1;
         }
-        else if (is_decimal) {
-            if (decimal_idx == -1) {
+        else if (is_decimal)
+        {
+            if (decimal_idx == -1)
+            {
                 decimal_idx = (i64)i;
             }
-            else {
+            else
+            {
                 result = false;
                 break;
             }
         }
-        else if (!is_digit) {
+        else if (!is_digit)
+        {
             result = false;
             break;
         }
 
-        if (!found_digit) {
-            if (str.data[i] == '0') {
+        if (!found_digit)
+        {
+            if (str.data[i] == '0')
+            {
                 pos = i;
             }
-            else {
+            else
+            {
                 found_digit = true;
             }
         }
     }
 
-    if (result) {
-        if (!found_digit) {
+    if (result)
+    {
+        if (!found_digit)
+        {
             *dest = 0.0 * sign;
         }
-        else {
+        else
+        {
             f64 value = 0.0;
             f64 factor = 1.0;
 
-            if (decimal_idx == -1) {
-                for (usize i = 1; i < (str.len - pos); ++i) {
+            if (decimal_idx == -1)
+            {
+                for (usize i = 1; i < (str.len - pos); ++i)
+                {
                     factor *= 10.0;
                 }
             }
-            else if (decimal_idx == (i64)pos) {
+            else if (decimal_idx == (i64)pos)
+            {
                 factor = 0.1;
             }
-            else {
-                for (i64 i = pos + 1; i < decimal_idx; ++i) {
+            else
+            {
+                for (i64 i = pos + 1; i < decimal_idx; ++i)
+                {
                     factor *= 10.0;
                 }
             }
 
-            while (pos < str.len) {
-                if ((i64)pos != decimal_idx) {
+            while (pos < str.len)
+            {
+                if ((i64)pos != decimal_idx)
+                {
                     f64 digit = (f64)((u32)(str.data[pos] - '0'));
                     value += digit * factor;
 
@@ -4275,11 +4731,14 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest) {
     return result;
 }
 
-CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch) {
+CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch)
+{
     b32 result = false;
 
-    for (usize i = 0; i < src->len; ++i) {
-        if (src->data[i] == ch) {
+    for (usize i = 0; i < src->len; ++i)
+    {
+        if (src->data[i] == ch)
+        {
             dest->data = src->data;
             dest->len = i;
             dest->cap = i;
@@ -4296,7 +4755,8 @@ CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch) {
     return result;
 }
 
-CBA_DEF b32 str_chop_up_to_cstr(String* src, String* dest, const char* cstr, b32 case_sensitive) {
+CBA_DEF b32 str_chop_up_to_cstr(String* src, String* dest, const char* cstr, b32 case_sensitive)
+{
     uninit b32 result;
 
     String str = str_from_cstr(cstr);
@@ -4305,7 +4765,8 @@ CBA_DEF b32 str_chop_up_to_cstr(String* src, String* dest, const char* cstr, b32
     return result;
 }
 
-CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 case_sensitive) {
+CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 case_sensitive)
+{
     b32 result = false;
 
     cba_assert(src->len >= other.len,
@@ -4315,17 +4776,21 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
     // @todo: case sensitive
     CBA_UNUSED(case_sensitive);
 
-    for (usize i = 0; i < src->len; ++i) {
+    for (usize i = 0; i < src->len; ++i)
+    {
         b32 matches = true;
 
-        for (usize ii = 0; ii < other.len; ++ii) {
-            if (src->data[i + ii] != other.data[ii]) {
+        for (usize ii = 0; ii < other.len; ++ii)
+        {
+            if (src->data[i + ii] != other.data[ii])
+            {
                 matches = false;
                 break;
             }
         }
 
-        if (matches) {
+        if (matches)
+        {
             dest->data = src->data;
             dest->len = i;
             dest->cap = i;
@@ -4342,7 +4807,8 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
     return result;
 }
 
-CBA_DEF String str_from_current_time() {
+CBA_DEF String str_from_current_time()
+{
     String result = str_alloc_with_cap(32);
 
 #if CBA_WINDOWS
@@ -4358,7 +4824,8 @@ CBA_DEF String str_from_current_time() {
     return result;
 }
 
-CBA_DEF String str_from_current_date() {
+CBA_DEF String str_from_current_date()
+{
     String result = str_alloc_with_cap(32);
 
 #if CBA_WINDOWS
@@ -4374,27 +4841,34 @@ CBA_DEF String str_from_current_date() {
     return result;
 }
 
-CBA_DEF usize str_levenshtein_distance(String a, String b) {
+CBA_DEF usize str_levenshtein_distance(String a, String b)
+{
     usize result = 0;
 
-    if (!a.len) {
+    if (!a.len)
+    {
         result = b.len;
     }
-    else if (!b.len) {
+    else if (!b.len)
+    {
         result = a.len;
     }
-    else {
+    else
+    {
         usize* v0 = alloc_array(b.len + 1, usize);
         usize* v1 = alloc_array(b.len + 1, usize);
 
-        for (usize i = 0; i < (b.len + 1); ++i) {
+        for (usize i = 0; i < (b.len + 1); ++i)
+        {
             v0[i] = i;
         }
 
-        for (usize i = 0; i < a.len; ++i) {
+        for (usize i = 0; i < a.len; ++i)
+        {
             v1[0] = i + 1;
 
-            for (usize ii = 0; ii < b.len; ++ii) {
+            for (usize ii = 0; ii < b.len; ++ii)
+            {
                 usize cost = (a.data[i] == b.data[ii]) ? 0 : 1;
                 v1[ii + 1] = min(v1[ii] + 1, min(v0[ii + 1] + 1, v0[ii] + cost));
             }
@@ -4408,10 +4882,12 @@ CBA_DEF usize str_levenshtein_distance(String a, String b) {
     return result;
 }
 
-CBA_DEF f32 str_levenshtein_similarity(String a, String b) {
+CBA_DEF f32 str_levenshtein_similarity(String a, String b)
+{
     f32 result = 0.0f;
 
-    if (a.len && b.len) {
+    if (a.len && b.len)
+    {
         usize distance = str_levenshtein_distance(a, b);
         usize max_len = max(a.len, b.len);
 
@@ -4421,13 +4897,15 @@ CBA_DEF f32 str_levenshtein_similarity(String a, String b) {
     return result;
 }
 
-CBA_DEF char* str_to_cstr(String str) {
+CBA_DEF char* str_to_cstr(String str)
+{
     char* result = alloc_array(str.len + 1, char);
     memcpy(result, str.data, str.len);
     return result;
 }
 
-CBA_DEF char* fmt_bytes(usize num_bytes) {
+CBA_DEF char* fmt_bytes(usize num_bytes)
+{
     const usize KB = 1llu << 10;
     const usize MB = 1llu << 20;
     const usize GB = 1llu << 30;
@@ -4435,32 +4913,40 @@ CBA_DEF char* fmt_bytes(usize num_bytes) {
 
     uninit char* result;
 
-    if ((num_bytes / TB) > 0) {
+    if ((num_bytes / TB) > 0)
+    {
         result = alloc_sprintf("%.3lf TB", (f64)(num_bytes) * 1e-12);
     }
-    else if ((num_bytes / GB) > 0) {
+    else if ((num_bytes / GB) > 0)
+    {
         result = alloc_sprintf("%.3lf GB", (f64)(num_bytes) * 1e-9);
     }
-    else if ((num_bytes / MB) > 0) {
+    else if ((num_bytes / MB) > 0)
+    {
         result = alloc_sprintf("%.3lf MB", (f64)(num_bytes) * 1e-6);
     }
-    else if ((num_bytes / KB) > 0) {
+    else if ((num_bytes / KB) > 0)
+    {
         result = alloc_sprintf("%.3lf KB", (f64)(num_bytes) * 1e-3);
     }
-    else {
+    else
+    {
         result = alloc_sprintf("%zu bytes", num_bytes);
     }
 
     return result;
 }
 
-CBA_DEF char* _fmt_binary(u64 value, usize width) {
+CBA_DEF char* _fmt_binary(u64 value, usize width)
+{
     char* result = alloc_array(width + 1 + (width / 8), char);
 
     usize pos = 0;
 
-    for (usize i = 0; i < width; ++i) {
-        if ((i % 8 == 0) && (i != width - 1)) {
+    for (usize i = 0; i < width; ++i)
+    {
+        if ((i % 8 == 0) && (i != width - 1))
+        {
             result[pos] = ' ';
             pos += 1;
         }
@@ -4473,23 +4959,28 @@ CBA_DEF char* _fmt_binary(u64 value, usize width) {
     return result;
 }
 
-CBA_DEF char* fmt_binary8(u8 b) {
+CBA_DEF char* fmt_binary8(u8 b)
+{
     return _fmt_binary(b, 8);
 }
 
-CBA_DEF char* fmt_binary16(u16 b) {
+CBA_DEF char* fmt_binary16(u16 b)
+{
     return _fmt_binary(b, 16);
 }
 
-CBA_DEF char* fmt_binary32(u32 b) {
+CBA_DEF char* fmt_binary32(u32 b)
+{
     return _fmt_binary(b, 32);
 }
 
-CBA_DEF char* fmt_binary64(u64 b) {
+CBA_DEF char* fmt_binary64(u64 b)
+{
     return _fmt_binary(b, 64);
 }
 
-CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
+CBA_DEF char* fmt_time(u64 nanos, u8 verbosity)
+{
     uninit char* result;
 
     const u64 MICRO = 1000;
@@ -4498,27 +4989,33 @@ CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
     const u64 MIN   = 60000000000;
     const u64 HOUR  = 3600000000000;
 
-    if (nanos < MICRO) {
+    if (nanos < MICRO)
+    {
         const char* unit = verbosity == 0 ? "ns" : (verbosity == 1 ? "nanos" : "nanoseconds");
         result = alloc_sprintf("%llu %s", nanos, unit);
     }
-    else if (nanos < MILLI) {
+    else if (nanos < MILLI)
+    {
         const char* unit = verbosity == 0 ? "µs" : (verbosity == 1 ? "micros" : "microseconds");
         result = alloc_sprintf("%.3lf %s", (f64)nanos * 1e-3, unit);
     }
-    else if (nanos < SEC) {
+    else if (nanos < SEC)
+    {
         const char* unit = verbosity == 0 ? "ms" : (verbosity == 1 ? "millis" : "milliseconds");
         result = alloc_sprintf("%.3lf %s", (f64)nanos * 1e-6, unit);
     }
-    else if (nanos < MIN) {
+    else if (nanos < MIN)
+    {
         const char* unit = verbosity == 0 ? "s" : (verbosity == 1 ? "secs" : "seconds");
         result = alloc_sprintf("%.3lf %s", (f64)nanos * 1e-9, unit);
     }
-    else if (nanos < HOUR) {
+    else if (nanos < HOUR)
+    {
         const char* unit = verbosity == 0 ? "m" : (verbosity == 1 ? "mins" : "minutes");
         result = alloc_sprintf("%.3lf %s", (f64)nanos * (1e-9 / 60.0), unit);
     }
-    else {
+    else
+    {
         const char* unit = verbosity == 0 ? "h" : (verbosity == 1 ? "hrs" : "hours");
         result = alloc_sprintf("%.3lf %s", (f64)nanos * (1e-9 / 3600.0), unit);
     }
@@ -4526,7 +5023,8 @@ CBA_DEF char* fmt_time(u64 nanos, u8 verbosity) {
     return result;
 }
 
-CBA_DEF const char* fmt_version(Version v) {
+CBA_DEF const char* fmt_version(Version v)
+{
   uninit u64 major, minor, patch;
   version_unpack(v, &major, &minor, &patch);
 
@@ -4539,15 +5037,18 @@ CBA_DEF const char* fmt_version(Version v) {
 
 // @mark: string array
 
-CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
+CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len)
+{
     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
         
-    if (!arr->cap) {
+    if (!arr->cap)
+    {
         arr->items = alloc_array(new_len, String);
         arr->cap = new_len;
     }
 
-    if (new_len > arr->cap) {
+    if (new_len > arr->cap)
+    {
         usize new_cap = next_pow2(new_len);
 
         print("reallocating string array to %zu elements", new_cap);
@@ -4558,8 +5059,10 @@ CBA_DEF void _str_arr_resize(StringArray* arr, usize new_len) {
     }
 }
 
-CBA_DEF void str_arr_append_str(StringArray* arr, String str) {
-    if (!arr->items) {
+CBA_DEF void str_arr_append_str(StringArray* arr, String str)
+{
+    if (!arr->items)
+    {
         arr->count = 0;
     }
 
@@ -4569,11 +5072,13 @@ CBA_DEF void str_arr_append_str(StringArray* arr, String str) {
     arr->count += 1;
 }
 
-CBA_DEF void __str_arr_append_va(StringArray* arr, usize n, ...) {
+CBA_DEF void __str_arr_append_va(StringArray* arr, usize n, ...)
+{
     uninit va_list args;
     va_start(args, n);
 
-    for (usize i = 0; i < n; ++i) {
+    for (usize i = 0; i < n; ++i)
+    {
         String arg = va_arg(args, String);
         str_arr_append_str(arr, arg);
     }
@@ -4581,11 +5086,13 @@ CBA_DEF void __str_arr_append_va(StringArray* arr, usize n, ...) {
     va_end(args);
 }
 
-CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, usize n, ...) {
+CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, usize n, ...)
+{
     uninit va_list args;
     va_start(args, n);
 
-    for (usize i = 0; i < n; ++i) {
+    for (usize i = 0; i < n; ++i)
+    {
         const char* arg = va_arg(args, const char*);
         str_arr_append_str(arr, str_from_cstr(arg));
     }
@@ -4593,10 +5100,12 @@ CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, usize n, ...) {
     va_end(args);
 }
 
-CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, usize count) {
+CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, usize count)
+{
     StringArray result = {0};
 
-    for (usize i = 0; i < count; ++i) {
+    for (usize i = 0; i < count; ++i)
+    {
         String s = str_from_cstr(arr[i]);
         str_arr_append_str(&result, s);
     }
@@ -4604,30 +5113,36 @@ CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, usize count) {
     return result;
 }
 
-CBA_DEF void str_arr_concat(StringArray* arr, StringArray other) {
-    for (usize i = 0; i < other.count; ++i) {
+CBA_DEF void str_arr_concat(StringArray* arr, StringArray other)
+{
+    for (usize i = 0; i < other.count; ++i)
+    {
         str_arr_append_str(arr, other.items[i]);
     }
 }
 
-CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator) {
+CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator)
+{
     String result = {0};
     String sep = str_from_cstr(separator);
 
     // @jcg: starts with 1 to keep space for a null-terminator.
     usize cap = 1;
 
-    for (usize i = 0; i < arr.count; ++i) {
+    for (usize i = 0; i < arr.count; ++i)
+    {
         cap += arr.items[i].len;
         cap += sep.len;
     }
 
     result = str_alloc_with_cap(cap);
 
-    for (usize i = 0; i < arr.count; ++i) {
+    for (usize i = 0; i < arr.count; ++i)
+    {
         str_append_other(&result, arr.items[i]);
 
-        if (i < (arr.count - 1)) {
+        if (i < (arr.count - 1))
+        {
             str_append_other(&result, sep);
         }
     }
@@ -4641,15 +5156,18 @@ CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator) {
 
 // @mark: commands
 
-CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
+CBA_DEF void _cmd_resize(Command* cmd, usize new_len)
+{
     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
 
-    if (!cmd->cap) {
+    if (!cmd->cap)
+    {
         cmd->items = alloc_array(new_len, String);
         cmd->cap = new_len;
     }
 
-    if (new_len > cmd->cap) {
+    if (new_len > cmd->cap)
+    {
         usize new_cap = next_pow2(new_len);
 
         print("reallocating command to %zu elements", new_cap);
@@ -4659,12 +5177,15 @@ CBA_DEF void _cmd_resize(Command* cmd, usize new_len) {
     }
 }
 
-CBA_DEF void cmd_append_str(Command* cmd, String str) {
-    if (!cmd->items) {
+CBA_DEF void cmd_append_str(Command* cmd, String str)
+{
+    if (!cmd->items)
+    {
         cmd->count = 0;
     }
 
-    if (str.len) {
+    if (str.len)
+    {
         _cmd_resize(cmd, cmd->count + 1);
 
         cmd->items[cmd->count] = str;
@@ -4672,18 +5193,22 @@ CBA_DEF void cmd_append_str(Command* cmd, String str) {
     }
 }
 
-CBA_DEF void cmd_append_str_arr(Command* cmd, StringArray arr) {
-    for (usize i = 0; i < arr.count; ++i) {
+CBA_DEF void cmd_append_str_arr(Command* cmd, StringArray arr)
+{
+    for (usize i = 0; i < arr.count; ++i)
+    {
         cba_assert(arr.items[i].len, "cannot append empty string to command (element %zu of string array)", i);
         cmd_append_str(cmd, arr.items[i]);
     }
 }
 
-CBA_DEF void __cmd_append_va(Command* cmd, usize n, ...) {
+CBA_DEF void __cmd_append_va(Command* cmd, usize n, ...)
+{
     uninit va_list args;
     va_start(args, n);
 
-    for (usize i = 0; i < n; ++i) {
+    for (usize i = 0; i < n; ++i)
+    {
         const char* arg = va_arg(args, const char*);
         cmd_append_str(cmd, str_from_cstr(arg));
     }
@@ -4691,21 +5216,26 @@ CBA_DEF void __cmd_append_va(Command* cmd, usize n, ...) {
     va_end(args);
 }
 
-CBA_DEF void cmd_concat(Command* cmd, Command other) {
-    for (usize i = 0; i < other.count; ++i) {
+CBA_DEF void cmd_concat(Command* cmd, Command other)
+{
+    for (usize i = 0; i < other.count; ++i)
+    {
         cmd_append_str(cmd, other.items[i]);
     }
 }
 
-CBA_DEF void cmd_reset(Command* cmd) {
-    for (usize i = 0; i < cmd->count; ++i) {
+CBA_DEF void cmd_reset(Command* cmd)
+{
+    for (usize i = 0; i < cmd->count; ++i)
+    {
         str_clear(&cmd->items[i]);
     }
 
     cmd->count = 0;
 }
 
-CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
+CBA_DEF void cmd_append_split(Command* cmd, const char* args)
+{
     String args_str = str_from_cstr(args);
     cba_assert(args_str.len > 0, "cannot split empty command");
 
@@ -4716,14 +5246,18 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
     b32 last_char_was_space = false;
     usize next_append_pos = 0;
 
-    for (usize i = 0; i < args_str.len; ++i) {
-        if (args_str.data[i] == '\"') {
-            if (double_quote_pos != -1) {
+    for (usize i = 0; i < args_str.len; ++i)
+    {
+        if (args_str.data[i] == '\"')
+        {
+            if (double_quote_pos != -1)
+            {
                 usize len = i - (usize)double_quote_pos;
                 cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, (usize)double_quote_pos + 1, len - 1);
 
-                if (concat_arg.len) {
+                if (concat_arg.len)
+                {
                     arg = str_sprintf("%.*s%.*s", sfmt(concat_arg), sfmt(arg));
                     concat_arg.len = 0;
                 }
@@ -4734,10 +5268,12 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
                 single_quote_pos = -1;
                 double_quote_pos = -1;
             }
-            else {
+            else
+            {
                 double_quote_pos = (i32)i;
 
-                if (!last_char_was_space) {
+                if (!last_char_was_space)
+                {
                     usize len = i - next_append_pos;
                     cba_assert(len != (usize)(-1), "incorrect length");
                     concat_arg = str_slice(args_str, next_append_pos, len);
@@ -4746,13 +5282,16 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
                 }
             }
         }
-        else if (args_str.data[i] == '\'') {
-            if (single_quote_pos != -1) {
+        else if (args_str.data[i] == '\'')
+        {
+            if (single_quote_pos != -1)
+            {
                 usize len = i - (usize)single_quote_pos;
                 cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, (usize)single_quote_pos + 1, len - 1);
 
-                if (concat_arg.len) {
+                if (concat_arg.len)
+                {
                     arg = str_sprintf("%.*s%.*s", sfmt(concat_arg), sfmt(arg));
                     concat_arg.len = 0;
                 }
@@ -4763,10 +5302,12 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
                 single_quote_pos = -1;
                 double_quote_pos = -1;
             }
-            else {
+            else
+            {
                 single_quote_pos = (i32)i;
 
-                if (!last_char_was_space) {
+                if (!last_char_was_space)
+                {
                     usize len = i - next_append_pos;
                     cba_assert(len != (usize)(-1), "incorrect length");
                     concat_arg = str_slice(args_str, next_append_pos, len);
@@ -4775,8 +5316,10 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
                 }
             }
         }
-        else if (args_str.data[i] == ' ') {
-            if ((single_quote_pos == -1) && (double_quote_pos == -1) && (i != next_append_pos)) {
+        else if (args_str.data[i] == ' ')
+        {
+            if ((single_quote_pos == -1) && (double_quote_pos == -1) && (i != next_append_pos))
+            {
                 usize len = i - next_append_pos;
                 cba_assert(len != (usize)(-1), "incorrect length");
                 String arg = str_slice(args_str, next_append_pos, len);
@@ -4788,16 +5331,19 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
             last_char_was_space = true;
         }
 
-        if (args_str.data[i] != ' ') {
+        if (args_str.data[i] != ' ')
+        {
             last_char_was_space = false;
         }
     }
 
     usize final_len = args_str.len - next_append_pos;
 
-    if (final_len) {
+    if (final_len)
+    {
         char final = args_str.data[args_str.len - 1];
-        if (final == '\'' || final == '\"') {
+        if (final == '\'' || final == '\"')
+        {
             final_len -= 1;
         }
 
@@ -4806,7 +5352,8 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args) {
     }
 }
 
-CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
+CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts)
+{
     b32 result = false;
 
     verbose_print("running `%s`", cmd_flatten_to_cstr(cmd));
@@ -4814,7 +5361,8 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
     FileDescriptor output_fd = INVALID_HANDLE;
     char* output_file_path = NULL;
 
-    if (opts.silence_output || opts.output_string) {
+    if (opts.silence_output || opts.output_string)
+    {
         cba_assert(!opts.async_pid, "cannot silence and/or read command output to string when running as async");
 
         static u64 output_file_id = 0;
@@ -4822,7 +5370,8 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
         output_file_path = alloc_sprintf("cba_output_file_%llu", output_file_id);
         output_file_id += nanos_now();
 
-        while (file_exists(output_file_path)) {
+        while (file_exists(output_file_path))
+        {
             output_file_path = alloc_sprintf("cba_output_file_%llu", output_file_id);
             output_file_id += nanos_now();
         }
@@ -4835,22 +5384,27 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
 
     ProcessID pid = proc_start(cmd, output_fd);
 
-    if (opts.async_pid && (pid != INVALID_HANDLE)) {
+    if (opts.async_pid && (pid != INVALID_HANDLE))
+    {
         *opts.async_pid = pid;
         result = true;
     }
-    else {
+    else
+    {
         i32 proc_result = proc_wait(pid, opts.exit_code);
 
-        if (proc_result == 1) {
+        if (proc_result == 1)
+        {
             result = true;
 
-            if (opts.output_string) {
+            if (opts.output_string)
+            {
                 usize bytes = _seek_fd(output_fd, true);
 
                 *opts.output_string = str_alloc_with_cap(bytes);
 
-                if (bytes > 0) {
+                if (bytes > 0)
+                {
                     cba_assert(_seek_fd(output_fd, false) == 0, "incorrect seek position");
 
                     isize bytes_read = _read_fd(output_fd, opts.output_string->data, bytes);
@@ -4860,23 +5414,27 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts) {
                 }
             }
         }
-        else if (opts.exit_code && proc_result == -1) {
+        else if (opts.exit_code && proc_result == -1)
+        {
             *opts.exit_code = -1;
         }
     }
 
-    if (output_fd != INVALID_HANDLE) {
+    if (output_fd != INVALID_HANDLE)
+    {
         _close_fd(output_fd);
     }
 
-    if (output_file_path && !file_delete(output_file_path)) {
+    if (output_file_path && !file_delete(output_file_path))
+    {
         verbose_print("failed to remove output file \"%s\": %s", output_file_path, _os_error());
     }
 
     return result;
 }
 
-CBA_DEF b32 cmd_try_run_direct_with_opts(const char* command, CommandOptions opts) {
+CBA_DEF b32 cmd_try_run_direct_with_opts(const char* command, CommandOptions opts)
+{
     b32 result = false;
 
     Command cmd = {0};
@@ -4887,50 +5445,60 @@ CBA_DEF b32 cmd_try_run_direct_with_opts(const char* command, CommandOptions opt
     return result;
 }
 
-CBA_DEF String cmd_flatten(Command cmd) {
+CBA_DEF String cmd_flatten(Command cmd)
+{
     return cmd_flatten_with_delims(cmd, '"');
 }
 
-CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim) {
+CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim)
+{
     String result = {0};
 
     // // @jcg: starts with 1 to keep space for a null-terminator.
     // usize capacity = 1;
     //
-    // for (usize i = 0; i < cmd.count; ++i) {
+    // for (usize i = 0; i < cmd.count; ++i)
+    // {
     //     // + 3 for space character and (possible) quotes.
     //     capacity += cmd.items[i].cap + 3; 
     // }
     //
     // result = str_alloc_with_cap(capacity);
 
-    for (usize i = 0; i < cmd.count; ++i) {
+    for (usize i = 0; i < cmd.count; ++i)
+    {
         String arg = cmd.items[i];
         cba_assert(arg.len, "argument should not be empty");
 
-        if (i != 0) {
+        if (i != 0)
+        {
             str_append_char(&result, ' ');
         }
 
-        if (!str_contains_char(arg, ' ')) {
+        if (!str_contains_char(arg, ' '))
+        {
             str_append_other(&result, arg);
         }
-        else {
+        else
+        {
             // @todo: bit of a hack to avoid surrounding arguments which already contain
             // the delimiter with more of that delimiter. Might want to implement
             // something that checks for balanced delimiters, and perhaps whether the
             // first delimiter is adjacent to a space or something...
-            if (delim == '"' && str_contains_char(result, '"')) {
+            if (delim == '"' && str_contains_char(result, '"'))
+            {
                 str_append_char(&result, '\'');
                 str_append_other(&result, arg);
                 str_append_char(&result, '\'');
             }
-            else if (delim == '\'' && str_contains_char(result, '\'')) {
+            else if (delim == '\'' && str_contains_char(result, '\''))
+            {
                 str_append_char(&result, '"');
                 str_append_other(&result, arg);
                 str_append_char(&result, '"');
             }
-            else {
+            else
+            {
                 str_append_char(&result, delim);
                 str_append_other(&result, arg);
                 str_append_char(&result, delim);
@@ -4941,12 +5509,14 @@ CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim) {
     return result;
 }
 
-CBA_DEF char* cmd_flatten_to_cstr(Command cmd) {
+CBA_DEF char* cmd_flatten_to_cstr(Command cmd)
+{
     String result = cmd_flatten(cmd);
     return result.data;
 }
 
-CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim) {
+CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim)
+{
     String result = cmd_flatten_with_delims(cmd, delim);
     return result.data;
 }

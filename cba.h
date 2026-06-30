@@ -973,6 +973,12 @@ CBA_DEF usize count_bits(u64 mask);
 /// Returns the next power of two value for `x`.
 CBA_DEF usize next_pow2(usize x);
 
+/// Whether the `stdout` stream is a terminal.
+CBA_DEF b32 is_stdout_tty();
+
+/// Whether the `stderr` stream is a terminal.
+CBA_DEF b32 is_stderr_tty();
+
 /// Whether the provided executable name could be found in the system's PATH.
 ///
 /// On Unix systems this uses `which`, and on Windows it uses `where.exe`.
@@ -1944,6 +1950,24 @@ CBA_DEF usize next_pow2(usize x)
     }
 
     return result;
+}
+
+CBA_DEF b32 is_stdout_tty()
+{
+#if CBA_WINDOWS
+    return _isatty(_fileno(stdout));
+#else
+    return isatty(fileno(stdout));
+#endif
+}
+
+CBA_DEF b32 is_stderr_tty()
+{
+#if CBA_WINDOWS
+    return _isatty(_fileno(stderr));
+#else
+    return isatty(fileno(stderr));
+#endif
 }
 
 CBA_DEF b32 has_exe_in_path(const char* exe_name)

@@ -3720,7 +3720,7 @@ CBA_DEF void str_lshift(String* str, usz start, usz shift)
                "shift start is outside of the string (start: %zu, len: %zu)",
                start, str->len);
     cba_assert(0 < start && shift <= start,
-               "string should would underflow (start: %zu, shift: %zu)",
+               "string shift would underflow (start: %zu, shift: %zu)",
                start, shift);
 
     for (usz i = start; i < str->len; ++i)

@@ -1242,13 +1242,13 @@ CBA_DEF void str_append_line_ending(String* str);
 /// Appends the provided character to the provided string.
 CBA_DEF void str_append_char(String* str, char ch);
 /// Appends the provided null-terminated C-string to the provided string. The
-/// null-terminatoris not included.
+/// null-terminator is not included.
 CBA_DEF void str_append_cstr(String* str, const char* cstr);
 /// Appends the provided character buffer to the provided string.
 CBA_DEF void str_append_chars(String* str, char* buffer, usz count);
 /// Appends the contents of `other` to the provided string.
 CBA_DEF void str_append_other(String* str, String other);
-/// Appends formatted string to the provided string.
+/// Appends a formatted string to the provided string.
 CBA_DEF void str_appendf(String* str, const char* fmt, ...) PRINTF_FORMAT(2, 3);
 
 /// Prepends the provided character to the provided string.

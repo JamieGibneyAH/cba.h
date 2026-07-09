@@ -2824,13 +2824,13 @@ CBA_DEF b32 file_try_create_directory(const char* path)
                     break;
                 }
             }
+        }
 
-            // @jcg: the above only creates parent paths: the top-level dir still needs to
-            // be created.
-            if (result && !_create_dir((char*)path))
-            {
-                result = false;
-            }
+        // @jcg: the above only creates parent paths: the top-level dir still needs to
+        // be created.
+        if (result && !_create_dir((char*)path))
+        {
+            result = false;
         }
     }
     else

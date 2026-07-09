@@ -1251,6 +1251,18 @@ CBA_DEF void str_append_other(String* str, String other);
 /// Appends formatted string to the provided string.
 CBA_DEF void str_appendf(String* str, const char* fmt, ...) PRINTF_FORMAT(2, 3);
 
+/// Prepends the provided character to the provided string.
+CBA_DEF void str_prepend_char(String* str, char ch);
+/// Prepends the provided null-terminated C-string to the provided string. The
+/// null-terminator is not included.
+CBA_DEF void str_prepend_cstr(String* str, const char* cstr);
+/// Prepends the provided character buffer to the provided string.
+CBA_DEF void str_prepend_chars(String* str, char* buffer, usz count);
+/// Prepends the contents of `other` to the provided string.
+CBA_DEF void str_prepend_other(String* str, String other);
+/// Prepends a formatted string to the provided string.
+CBA_DEF void str_prependf(String* str, const char* fmt, ...) PRINTF_FORMAT(2, 3);
+
 /// Sets the provided string's characters to lowercase.
 CBA_DEF void str_to_lower(String* str);
 /// Sets the provided string's characters to uppercase.
@@ -3686,6 +3698,46 @@ CBA_DEF void str_appendf(String* str, const char* fmt, ...)
     _str_resize(str, str->len + len + 1);
     vsnprintf(str->data + str->len, len + 1, fmt, args);
     str->len += len;
+
+    va_end(args);
+}
+
+CBA_DEF void str_prepend_char(String* str, char ch)
+{
+    str_rshift(str, 0, 1);
+    str->data[0] = ch;
+}
+
+CBA_DEF void str_prepend_cstr(String* str, const char* cstr)
+{
+    usz len = (usz)strlen(cstr);
+
+    str_rshift(str, 0, len);
+    memcpy(str->data, cstr, len);
+}
+
+CBA_DEF void str_prepend_chars(String* str, char* buffer, usz count)
+{
+    str_rshift(str, 0, count);
+    memcpy(str->data, buffer, count);
+}
+
+CBA_DEF void str_prepend_other(String* str, String other)
+{
+    str_rshift(str, 0, other.len);
+    memcpy(str->data, other.data, other.len);
+}
+
+CBA_DEF void str_prependf(String* str, const char* fmt, ...)
+{
+    uninit va_list args;
+    va_start(args, fmt);
+
+    int len = vsnprintf(NULL, 0, fmt, args);
+    cba_assert(len > 0, "failed to construct format string from \"%s\"", fmt);
+
+    str_rshift(str, 0, len);
+    vsnprintf(str->data, len, fmt, args);
 
     va_end(args);
 }

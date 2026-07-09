@@ -1686,7 +1686,7 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
 
 // @mark: implementation
 
-#ifdef CBA_IMPLEMENTATION
+#if defined(CBA_IMPLEMENTATION)
 
 Arena global_arena = {0};
 

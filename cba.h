@@ -3342,8 +3342,8 @@ CBA_DEF String str_from_file(const char* file_path)
 {
     String result = {0};
 
-    FILE* f = fopen(file_path, "rb");
-    cba_assert(f, "failed to open file \"%s\" for reading", file_path);
+    FILE* f = fopen(file_path, "r");
+    cba_assert(f, "failed to open file \"%s\" for reading: %s", file_path, strerror(errno));
 
     fseek(f, 0, SEEK_END);
     usz len = (usz)ftell(f);

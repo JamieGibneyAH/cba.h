@@ -1,5 +1,5 @@
 /*  
-    cba.h | v1.5.0 | https://github.com/jamiegibney/cba.h
+    cba.h | v1.6.0 | https://github.com/jamiegibney/cba.h
   
     Single-header library for build recipes and general utilities in C.
 
@@ -5604,6 +5604,15 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim)
 /*
     # Version history
 
+    - v1.6.0 (09 Jul 2026) (by @jamiegibney)
+        - Renamed usize and isize to usz and isz (breaking change)
+        - Added string 'prepend' functions
+        - Added count_bits function
+        - Added is_stdout_tty and is_stderr_tty
+        - Added functions for used/capacity bytes of all blocks allocated to an arena
+        - Removed a duplicate string function
+        - Various fixes
+        - Updated formatting
     - v1.5.0 (05 Jun 2026) (by @jamiegibney)
         - Added str_cwd for getting the current working directory
         - Removed CBA_NO_DYNAMIC_ALLOCATION in favour of using dynamically-resizable arenas

@@ -1331,8 +1331,6 @@ CBA_DEF StringArray str_split_by(String str, char delim);
 /// string.
 CBA_DEF StringArray str_split_lines(String str);
 
-// @todo: case-insensitive versions of below?
-
 /// Whether `a` is equivalent to `b`.
 CBA_DEF b32 str_eq(String a, String b);
 /// Whether `a` is equivalent to the null-terminated `b` C-string.

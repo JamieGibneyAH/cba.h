@@ -929,7 +929,10 @@ typedef struct Command Command;
     #define CBA_REBUILD_FAILED_MESSAGE(binary_name) alloc_sprintf("Failed to rebuild \"%s\"", (binary_name))
 #endif
 #ifndef CBA_REBUILD_COMPLETED_MESSAGE
-    #define CBA_REBUILD_COMPLETED_MESSAGE(binary_name, elapsed_ns) alloc_sprintf("Rebuilt \"%s\" in %s", (binary_name), fmt_time((elapsed_ns), 0))
+    #define CBA_REBUILD_COMPLETED_MESSAGE(binary_name, elapsed_ns) \
+        alloc_sprintf("Rebuilt \"%s\" in " ANSI_BOLD("%s"),        \
+                      (binary_name),                               \
+                      fmt_time((elapsed_ns), 0))
 #endif
 
 #ifndef CBA_REBUILD_COMMAND

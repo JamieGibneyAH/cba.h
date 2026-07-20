@@ -209,7 +209,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <time.h>
-#include <math.h>
 
 #if CBA_WINDOWS
     #define WIN32_LEAN_AND_MEAN
@@ -436,12 +435,14 @@ typedef int32_t   i32;
 typedef int64_t   i64;
 
 typedef size_t    usz;
-typedef ptrdiff_t isz;
+typedef ptrdiff_t sz;
 
 typedef int32_t   b32;
 
 typedef float     f32;
 typedef double    f64;
+
+#define isizeof(x) ((sz)sizeof(x))
 
 #define ___CBA_STATIC_ASSERT(cond, msg) typedef char static_assert_##msg[(!!(cond))*2-1]
 #define __CBA_STATIC_ASSERT(cond, line) ___CBA_STATIC_ASSERT(cond, at_line_##line)
@@ -458,7 +459,7 @@ CBA_STATIC_ASSERT(sizeof(u16) == 2);
 CBA_STATIC_ASSERT(sizeof(u32) == 4);
 CBA_STATIC_ASSERT(sizeof(u64) == 8);
 
-CBA_STATIC_ASSERT(sizeof(usz) == sizeof(isz));
+CBA_STATIC_ASSERT(sizeof(usz) == sizeof(sz));
 
 CBA_STATIC_ASSERT(sizeof(f32) == 4);
 CBA_STATIC_ASSERT(sizeof(f64) == 8);
@@ -486,13 +487,13 @@ CBA_STATIC_ASSERT(sizeof(f64) == 8);
 #if CBA_64_BIT
     #define USZ_MIN U64_MIN
     #define USZ_MAX U64_MAX
-    #define ISZ_MIN I64_MIN
-    #define ISZ_MAX I64_MAX
+    #define SZ_MIN I64_MIN
+    #define SZ_MAX I64_MAX
 #else
     #define USZ_MIN U32_MIN
     #define USZ_MAX U32_MAX
-    #define ISZ_MIN I32_MIN
-    #define ISZ_MAX I32_MAX
+    #define SZ_MIN I32_MIN
+    #define SZ_MAX I32_MAX
 #endif
 
 #define F32_MIN     (1.17549435e-38f)
@@ -749,8 +750,8 @@ typedef enum FileKind FileKind;
 struct ArenaBlockFooter
 {
     u8* base;
-    usz used;
-    usz capacity;
+    sz used;
+    sz capacity;
 };
 typedef struct ArenaBlockFooter ArenaBlockFooter;
 
@@ -763,12 +764,12 @@ struct Arena
     /// Base pointer of the arena's memory block.
     u8* base;
     /// The number of bytes which the arena has allocated.
-    usz used;
+    sz used;
     /// The total number of bytes in the arena's memory block.
-    usz capacity;
+    sz capacity;
 
     /// Minimum block size to use for allocating memory blocks.
-    usz min_block_size;
+    sz min_block_size;
 };
 typedef struct Arena Arena;
 
@@ -778,9 +779,9 @@ struct String
     /// Pointer to the string's data.
     char* data;
     /// Number of bytes used in the string.
-    usz len;
+    sz len;
     /// Total number of bytes allocated to the string.
-    usz cap;
+    sz cap;
 };
 typedef struct String String;
 
@@ -790,9 +791,9 @@ struct StringArray
     /// Pointer to the array's data.
     String* items;
     /// Number of items in the array.
-    usz count;
+    sz count;
     /// Number of items allocated to the array.
-    usz cap;
+    sz cap;
 };
 typedef struct StringArray StringArray;
 
@@ -828,9 +829,9 @@ struct Command
     /// Pointer to the array of arguments in the command.
     String* items;
     /// Number of arguments in the command.
-    usz count;
+    sz count;
     /// Number of arguments allocated to the command.
-    usz cap;
+    sz cap;
 };
 typedef struct Command Command;
 
@@ -877,11 +878,11 @@ typedef struct Command Command;
 #define gigabytes(num) ((u64)(num) << 30)
 #define terabytes(num) ((u64)(num) << 40)
 
-#define countof(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+#define countof(x) (sz)((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 #define btos(boolean) ((boolean) ? "yes" : "no")
 
 #define memz(ptr, bytes) memset((ptr), 0, (bytes))
-#define memz_array(ptr, count) memz((ptr), (count) * sizeof((ptr)[0]))
+#define memz_array(ptr, count) memz((ptr), (count) * isizeof((ptr)[0]))
 
 #define streq(a, b)  (strcmp(a, b) == 0)
 #define strneq(a, b) (strcmp(a, b) != 0)
@@ -895,9 +896,9 @@ typedef struct Command Command;
      (((x) << 40) & 0x00ff000000000000) | (((x) << 56) & 0xff00000000000000))
 
 #if CBA_64_BIT
-    #define endian_swap_usz(x) endian_swap_64(x)
+    #define endian_swap_sz(x) endian_swap_64(x)
 #else
-    #define endian_swap_usz(x) endian_swap_32(x)
+    #define endian_swap_sz(x) endian_swap_32(x)
 #endif
 
 #if CBA_MSVC
@@ -965,16 +966,16 @@ CBA_DEF u64 nanos_now(void);
 CBA_DEF void wait_ms(u64 ms);
 
 /// Swaps `len_bytes` bytes between the memory at `a` and `b`.
-CBA_DEF void mem_swap(void* a, void* b, usz len_bytes);
+CBA_DEF void mem_swap(void* a, void* b, sz len_bytes);
 
 /// Whether the current system is little-endian or not.
 CBA_DEF b32 is_little_endian();
 
 /// Returns the number of `1` bits in `mask`.
-CBA_DEF usz count_bits(u64 mask);
+CBA_DEF sz count_bits(u64 mask);
 
 /// Returns the next power of two value for `x`.
-CBA_DEF usz next_pow2(usz x);
+CBA_DEF sz next_pow2(sz x);
 
 /// Whether the `stdout` stream is a terminal.
 CBA_DEF b32 is_stdout_tty();
@@ -1009,20 +1010,20 @@ extern Arena global_arena;
 ///
 /// If the arena does not have the capacity to allocate `size` bytes, an assertion will
 /// fail.
-CBA_DEF void* arena_alloc(Arena* arena, usz size);
+CBA_DEF void* arena_alloc(Arena* arena, sz size);
 /// Frees all of the arena's memory blocks and zeroes the arena.
 CBA_DEF void arena_free(Arena* arena);
 /// Returns the total number of bytes used by the arena.
-CBA_DEF usz arena_used(Arena* arena);
+CBA_DEF sz arena_used(Arena* arena);
 /// Returns the total number of bytes allocated by the arena.
-CBA_DEF usz arena_allocated(Arena* arena);
+CBA_DEF sz arena_allocated(Arena* arena);
 
 /// Allocates a single instance of a `type`.
-#define alloc(type) (type*)arena_alloc(&global_arena, sizeof(type))
+#define alloc(type) (type*)arena_alloc(&global_arena, isizeof(type))
 /// Allocates a `count` of bytes.
 #define alloc_bytes(count) (u8*)arena_alloc(&global_arena, (count))
 /// Allocates a `count` of elements of a `type`.
-#define alloc_array(count, type) (type*)arena_alloc(&global_arena, (count) * sizeof(type))
+#define alloc_array(count, type) (type*)arena_alloc(&global_arena, (count) * isizeof(type))
 
 /// Returns a pointer to a null-terminated C-string created via a formatted string and
 /// optional arguments. The string is allocated via the global arena.
@@ -1087,12 +1088,12 @@ CBA_DEF b32 file_exists(const char* path);
 /// Returns the type of the file at `path`.
 CBA_DEF FileKind file_get_kind(const char* path);
 /// Returns the length of the file in bytes.
-CBA_DEF usz file_length(const char* path);
+CBA_DEF sz file_length(const char* path);
 /// Reads a number of `bytes` from the file into the `dest` memory.
-CBA_DEF b32 file_read(const char* path, void* dest, usz bytes);
+CBA_DEF b32 file_read(const char* path, void* dest, sz bytes);
 /// Writes a number of `bytes` from the provided `memory` to the file, optionally
 /// appending to the file.
-CBA_DEF b32 file_write(const char* path, void* memory, usz bytes, b32 append);
+CBA_DEF b32 file_write(const char* path, void* memory, sz bytes, b32 append);
 /// Attempts to make a directory at `path` if the directory does not already exist.
 ///
 /// If the directory was successfully created or already exists, this function returns
@@ -1139,16 +1140,16 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd);
 /// The provided `ProcessID` cannot be `INVALID_HANDLE`.
 CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code);
 
-CBA_DEF i32 __proc_wait_va(usz n, ...);
+CBA_DEF i32 __proc_wait_va(sz n, ...);
 
 /// Waits on any number of `ProcessID` values.
 #define procs_wait(...) \
-    __proc_wait_va((sizeof((ProcessID[]) { __VA_ARGS__ }) / sizeof(ProcessID)), __VA_ARGS__)
+    __proc_wait_va((sz)(sizeof((ProcessID[]) { __VA_ARGS__ }) / sizeof(ProcessID)), __VA_ARGS__)
 
 // @mark: string
 
 /// Wraps a string literal with a `String`.
-#define strl(literal) ((String) { .data = (char*)(literal), .len = sizeof(literal) - 1, .cap = sizeof(literal) })
+#define strl(literal) ((String) { .data = (char*)(literal), .len = isizeof(literal) - 1, .cap = isizeof(literal) })
 /// Creates the printf-style formatting arguments for the provided `String`.
 #define sfmt(s) (int)((s).len), (const char*)((s).data)
 /// Expands to a printf-style formatting sequence for printing a `String`.
@@ -1160,14 +1161,14 @@ CBA_DEF void str_clear(String* str);
 /// Allocates an empty string with a capacity of `CBA_MIN_STRING_CAPACITY` bytes.
 CBA_DEF String str_alloc(void);
 /// Allocates an empty string with `cap` bytes.
-CBA_DEF String str_alloc_with_cap(usz cap);
+CBA_DEF String str_alloc_with_cap(sz cap);
 /// Allocates a formatted string based on the provided format string and arguments.
 CBA_DEF String str_sprintf(const char* fmt, ...) PRINTF_FORMAT(1, 2);
 /// Allocates a string from the provided null-terminated C-string. The resulting string's
 /// data is null-terminated, but is not included in its length.
 CBA_DEF String str_from_cstr(const char* cstr);
 /// Allocates a string from the provided character buffer.
-CBA_DEF String str_from_chars(char* buffer, usz count);
+CBA_DEF String str_from_chars(char* buffer, sz count);
 /// Allocates a string containing the contents of the file at the provided `file_path`. If
 /// the file couldn't be read, the returned string will be zeroed.
 CBA_DEF String str_from_file(const char* file_path);
@@ -1177,7 +1178,7 @@ CBA_DEF String str_from_file(const char* file_path);
 CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append);
 
 /// Creates a "slice" of the provided `String`, with the provided `start` position and `len`.
-CBA_DEF String str_slice(String str, usz start, usz len);
+CBA_DEF String str_slice(String str, sz start, sz len);
 /// "Shrinks" the provided `String` by `shift` elements from the left.
 ///
 /// For example:
@@ -1185,7 +1186,7 @@ CBA_DEF String str_slice(String str, usz start, usz len);
 /// String s = strl("abcde");
 /// str_shrink_left(&s, 2); // -> becomes "cde"
 /// ```
-CBA_DEF void str_shrink_left(String* str, usz shift);
+CBA_DEF void str_shrink_left(String* str, sz shift);
 /// "Shrinks" the provided `String` by `shift` elements from the right.
 ///
 /// For example:
@@ -1193,7 +1194,7 @@ CBA_DEF void str_shrink_left(String* str, usz shift);
 /// String s = strl("abcde");
 /// str_shrink_right(&s, 2); // -> becomes "abc"
 /// ```
-CBA_DEF void str_shrink_right(String* str, usz shift);
+CBA_DEF void str_shrink_right(String* str, sz shift);
 
 /// Returns a slice of the provided `str` which includes only the file name of a full file
 /// path and optionally its extension. If there is no root path or extension, the original
@@ -1248,7 +1249,7 @@ CBA_DEF void str_append_char(String* str, char ch);
 /// null-terminator is not included.
 CBA_DEF void str_append_cstr(String* str, const char* cstr);
 /// Appends the provided character buffer to the provided string.
-CBA_DEF void str_append_chars(String* str, char* buffer, usz count);
+CBA_DEF void str_append_chars(String* str, char* buffer, sz count);
 /// Appends the contents of `other` to the provided string.
 CBA_DEF void str_append_other(String* str, String other);
 /// Appends a formatted string to the provided string.
@@ -1260,7 +1261,7 @@ CBA_DEF void str_prepend_char(String* str, char ch);
 /// null-terminator is not included.
 CBA_DEF void str_prepend_cstr(String* str, const char* cstr);
 /// Prepends the provided character buffer to the provided string.
-CBA_DEF void str_prepend_chars(String* str, char* buffer, usz count);
+CBA_DEF void str_prepend_chars(String* str, char* buffer, sz count);
 /// Prepends the contents of `other` to the provided string.
 CBA_DEF void str_prepend_other(String* str, String other);
 /// Prepends a formatted string to the provided string.
@@ -1277,27 +1278,27 @@ CBA_DEF void str_to_upper(String* str);
 ///
 /// Note that if the shift would underflow the beginning of the string, this function will
 /// panic.
-CBA_DEF void str_lshift(String* str, usz start, usz shift);
+CBA_DEF void str_lshift(String* str, sz start, sz shift);
 /// Shifts the provided string's contents by `shift` elements to the right, beginning at
 /// the `start` index. The `start` index is included in the shift, and the shifted region
 /// extends until the end of the string. Elements which precede the shifted region are set
 /// to zero.
 ///
 /// Note that if the shift would overflow the end of the string, this function will panic.
-CBA_DEF void str_rshift(String* str, usz start, usz shift);
+CBA_DEF void str_rshift(String* str, sz start, sz shift);
 
 /// Inserts the provided `ch` character to `at` in the provided string.
-CBA_DEF void str_insert_char(String* str, usz at, char ch);
+CBA_DEF void str_insert_char(String* str, sz at, char ch);
 /// Inserts the provided `other` string to `at` in the provided string.
-CBA_DEF void str_insert_other(String* str, usz at, String other);
+CBA_DEF void str_insert_other(String* str, sz at, String other);
 /// Inserts the null-terminated C-string to `at` in the provided string.
-CBA_DEF void str_insert_cstr(String* str, usz at, const char* cstr);
+CBA_DEF void str_insert_cstr(String* str, sz at, const char* cstr);
 
 /// Removes the character at index `at` from the provided string.
-CBA_DEF void str_remove(String* str, usz at);
+CBA_DEF void str_remove(String* str, sz at);
 /// Removes the provided range of characters from the provided string. The range starts at
 /// and includes `start` and extends up to, but does not include, `end`.
-CBA_DEF void str_remove_range(String* str, usz start, usz end);
+CBA_DEF void str_remove_range(String* str, sz start, sz end);
 
 /// Replaces all instances of the `from` character with the `to` character.
 CBA_DEF void str_replace_chars(String* str, char from, char to);
@@ -1325,7 +1326,9 @@ CBA_DEF b32 str_trim_null(String* str);
 /// string.
 CBA_DEF StringArray str_split_by(String str, char delim);
 /// Splits the provided `String` by newline characters, returning an array of the
-/// separated lines. Newline characters will not be included in the resulting strings.
+/// separated lines. Newline characters will not be included in the resulting strings -
+/// this means that if there are several empty lines in the input, they are all skipped
+/// and omitted from the output.
 ///
 /// This function considers `\r\n` sequences to be newlines, and will omit them from the
 /// results.
@@ -1352,74 +1355,74 @@ CBA_DEF b32 str_ends_with(String str, const char* cstr);
 /// Whether any characters in the `needles` C-string could be found in `haystack`. When
 /// `case_sensitive` is false, case is ignored for alphabetic characters. When `where` is
 /// non-NULL, it is set to the index of the first matching character, if found.
-CBA_DEF b32 str_find_first_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_first_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, sz* where);
 /// Whether any characters in the `needles` array of `count` elements could be found in
 /// `haystack`. When `case_sensitive` is false, case is ignored for alphabetic characters.
 /// When `where` is non-NULL, it is set to the index of the first matching character, if
 /// found.
-CBA_DEF b32 str_find_first_of_any(String haystack, const char* needles, usz count, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_first_of_any(String haystack, const char* needles, sz count, b32 case_sensitive, sz* where);
 
 /// Whether any characters in the `needles` C-string could be found in `haystack`. When
 /// `case_sensitive` is false, case is ignored for alphabetic characters. When `where` is
 /// non-NULL, it is set to the index of the last matching character, if found.
-CBA_DEF b32 str_find_last_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_last_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, sz* where);
 /// Whether any characters in the `needles` array of `count` elements could be found in
 /// `haystack`. When `case_sensitive` is false, case is ignored for alphabetic characters.
 /// When `where` is non-NULL, it is set to the index of the last matching character, if
 /// found.
-CBA_DEF b32 str_find_last_of_any(String haystack, const char* needles, usz count, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_last_of_any(String haystack, const char* needles, sz count, b32 case_sensitive, sz* where);
 
 /// Whether `needle` could be found in `haystack`. When `where` is non-NULL, it is set to
 /// the index of the first matching character, if found.
-CBA_DEF b32 str_find_first_char(String haystack, char needle, usz* where);
+CBA_DEF b32 str_find_first_char(String haystack, char needle, sz* where);
 /// Whether `needle` could be found in `haystack`. When `where` is non-NULL, it is set to
 /// the index of the last matching character, if found.
-CBA_DEF b32 str_find_last_char(String haystack, char needle, usz* where);
+CBA_DEF b32 str_find_last_char(String haystack, char needle, sz* where);
 /// Whether `needle` could be found in `haystack`. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters. When `where` is non-NULL, it is set to the index of
 /// the first matching string, if found.
-CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, sz* where);
 /// Whether `needle` could be found in `haystack`. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters. When `where` is non-NULL, it is set to the index of
 /// the last matching string, if found.
-CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, sz* where);
 /// Whether `needle` could be found in `haystack`. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters. When `where` is non-NULL, it is set to the index of
 /// the first matching string, if found.
-CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, sz* where);
 /// Whether `needle` could be found in `haystack`. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters. When `where` is non-NULL, it is set to the index of
 /// the last matching string, if found.
-CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, sz* where);
 
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing forwards. When `where` is non-NULL, it is set to the index of the
 /// first matching character, if found.
-CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usz from, usz* where);
+CBA_DEF b32 str_find_first_char_from(String haystack, char needle, sz from, sz* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing backwards. When `where` is non-NULL, it is set to the index of the
 /// last matching character, if found.
-CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usz from, usz* where);
+CBA_DEF b32 str_find_last_char_from(String haystack, char needle, sz from, sz* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing forwards. When `where` is non-NULL, it is set to the index of the
 /// first matching character, if found. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters.
-CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usz from, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_first_other_from(String haystack, String needle, sz from, b32 case_sensitive, sz* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing backwards. When `where` is non-NULL, it is set to the index of the
 /// last matching character, if found. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters.
-CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usz from, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_last_other_from(String haystack, String needle, sz from, b32 case_sensitive, sz* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing forwards. When `where` is non-NULL, it is set to the index of the
 /// first matching character, if found. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters.
-CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usz from, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, sz from, b32 case_sensitive, sz* where);
 /// Whether `needle` could be found in `haystack`, starting the search at the `from` index
 /// and progressing backwards. When `where` is non-NULL, it is set to the index of the
 /// last matching character, if found. When `case_sensitive` is false, case is
 /// ignored for alphabetic characters.
-CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usz from, b32 case_sensitive, usz* where);
+CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, sz from, b32 case_sensitive, sz* where);
 
 /// Returns the number of characters matching the `needle` char in the provided string.
 CBA_DEF u64 str_count_chars(String haystack, char needle);
@@ -1453,13 +1456,16 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest);
 CBA_DEF b32 str_parse_to_f64(String str, f64* dest);
 
 /// Chops any characters in `src` which precede the first occurence of `ch`, and places
-/// the "chopped" characters into `dest`. If `ch` was found, this function returns true.
+/// the "chopped" characters into `dest`. If `ch` was found, this function returns true
+/// and sets `str` to the character following the match.
 CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch);
 /// Chops any characters in `src` which precede the first occurence of `cstr`, and places
-/// the "chopped" characters into `dest`. If `ch` was found, this function returns true.
+/// the "chopped" characters into `dest`. If `ch` was found, this function returns true
+/// and sets `str` to the character following the match.
 CBA_DEF b32 str_chop_up_to_cstr(String* src, String* dest, const char* cstr, b32 case_sensitive);
 /// Chops any characters in `src` which precede the first occurence of `cstr`, and places
-/// the "chopped" characters into `dest`. If `ch` was found, this function returns true.
+/// the "chopped" characters into `dest`. If `ch` was found, this function returns true
+/// and sets `str` to the character following the match.
 CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 case_sensitive);
 
 // /// Chops any characters in `src` which precede the first occurence of `ch`, and places
@@ -1479,7 +1485,7 @@ CBA_DEF String str_from_current_date();
 
 /// Returns the Levenshtein distance between strings `a` and `b`, which is the number of
 /// changes required to convert one string into the other.
-CBA_DEF usz str_levenshtein_distance(String a, String b);
+CBA_DEF sz str_levenshtein_distance(String a, String b);
 /// Returns a similarity from `0.0` to `1.0` of the strings `a` and `b` using a
 /// Levenshtein distance algorithm.
 CBA_DEF f32 str_levenshtein_similarity(String a, String b);
@@ -1493,7 +1499,7 @@ CBA_DEF char* str_to_cstr(String str);
 /// `1234     -> "1.205 KB"`
 /// `1234567  -> "1.177 MB"`
 /// `56324857 -> "53.716 MB"`
-CBA_DEF char* fmt_bytes(usz num_bytes);
+CBA_DEF char* fmt_bytes(sz num_bytes);
 
 /// Creates a formatted string of the provided `u8` as binary.
 ///
@@ -1532,21 +1538,21 @@ CBA_DEF const char* fmt_version(Version v);
 /// Appends a single `String` to the provided `StringArray`.
 CBA_DEF void str_arr_append_str(StringArray* arr, String str);
 
-CBA_DEF void __str_arr_append_va(StringArray* arr, usz n, ...);
+CBA_DEF void __str_arr_append_va(StringArray* arr, sz n, ...);
 
 /// Appends any number of `String`s to the provided `StringArray`.
 #define str_arr_append(arr, ...)                                             \
-    __str_arr_append_va((arr), (sizeof((String[]){__VA_ARGS__}) / sizeof(String)), __VA_ARGS__)
+    __str_arr_append_va((arr), (sz)(sizeof((String[]){__VA_ARGS__}) / sizeof(String)), __VA_ARGS__)
 
-CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, usz n, ...);
+CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, sz n, ...);
 
 /// Appends any number of C-strings to the provided `StringArray`.
 #define str_arr_append_cstrs(arr, ...) \
-    __str_arr_append_cstrs_va((arr), (sizeof((const char*[]){__VA_ARGS__}) / sizeof(const char*)), __VA_ARGS__)
+    __str_arr_append_cstrs_va((arr), (sz)(sizeof((const char*[]){__VA_ARGS__}) / sizeof(const char*)), __VA_ARGS__)
 
 /// Converts an array of C-strings to a `StringArray`, allocating space for each new
 /// string.
-CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, usz count);
+CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, sz count);
 
 /// Appends the contents of the `other` array to the `arr` array.
 CBA_DEF void str_arr_concat(StringArray* arr, StringArray other);
@@ -1562,10 +1568,10 @@ CBA_DEF void cmd_append_str(Command* cmd, String str);
 /// Appends a `StringArray` to the provided `Command`.
 CBA_DEF void cmd_append_str_arr(Command* cmd, StringArray arr);
 
-CBA_DEF void __cmd_append_va(Command* cmd, usz n, ...);
+CBA_DEF void __cmd_append_va(Command* cmd, sz n, ...);
 /// Appends any number of C-strings to the provided `Command`.
 #define cmd_append(cmd, ...)                                                   \
-    __cmd_append_va((cmd), (sizeof((const char*[]) { __VA_ARGS__ }) / sizeof(const char*)), __VA_ARGS__)
+    __cmd_append_va((cmd), (sz)(sizeof((const char*[]) { __VA_ARGS__ }) / sizeof(const char*)), __VA_ARGS__)
 
 /// Appends the contents of the `other` command to the `cmd` command.
 CBA_DEF void cmd_concat(Command* cmd, Command other);
@@ -1655,6 +1661,14 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
     #define _DECLTYPE_CAST(x)
 #endif
 
+#define da_struct(type, name, ...) \
+    struct ## __VA_ARGS__          \
+    {                              \
+        type* items;               \
+        sz count;                 \
+        sz cap;                   \
+    } name
+
 #define da_reserve(arr, new_cap)                                                                         \
     do {                                                                                                 \
         if ((new_cap) > (arr)->cap) {                                                                    \
@@ -1662,8 +1676,8 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
                 (arr)->cap = CBA_MIN_ARRAY_CAPACITY;                                                     \
             }                                                                                            \
             (arr)->cap = next_pow2(new_cap);                                                             \
-            void* new_data = arena_alloc(&global_arena, (arr)->cap * sizeof(*(arr)->items));             \
-            memcpy(new_data, (arr)->items, (arr)->count * sizeof(*(arr)->items));                        \
+            void* new_data = arena_alloc(&global_arena, (arr)->cap * isizeof(*(arr)->items));             \
+            memcpy(new_data, (arr)->items, (arr)->count * isizeof(*(arr)->items));                        \
             (arr)->items = _DECLTYPE_CAST((arr)->items)new_data;                                         \
             cba_assert((arr)->items, "failed to reallocate %zu elements for dynamic array", (arr)->cap); \
         }                                                                                                \
@@ -1677,7 +1691,7 @@ CBA_DEF char* cmd_flatten_to_cstr_with_delims(Command cmd, char delim);
 #define da_append_many(arr, elements, element_count)                                              \
     do {                                                                                          \
         da_reserve((arr), (arr)->count + (element_count));                                        \
-        memcpy((arr)->items + (arr)->count, (elements), (element_count) * sizeof(*(arr)->items)); \
+        memcpy((arr)->items + (arr)->count, (elements), (element_count) * isizeof(*(arr)->items)); \
         (arr)->count += (element_count);                                                          \
     } while (0)
 
@@ -1832,7 +1846,7 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...)
 #endif
 
                 // re-run the previous command with the new binary.
-                StringArray cmd_args = str_arr_from_cstr_arr(argv + 1, (usz)(argc - 1));
+                StringArray cmd_args = str_arr_from_cstr_arr(argv + 1, (sz)(argc - 1));
 
                 cmd_reset(&cmd);
                 cmd_append_str(&cmd, binary_path);
@@ -1901,7 +1915,7 @@ CBA_DEF void wait_ms(u64 ms)
 #endif
 }
 
-CBA_DEF void mem_swap(void* a, void* b, usz len_bytes)
+CBA_DEF void mem_swap(void* a, void* b, sz len_bytes)
 {
     u8* lhs = (u8*)a;
     u8* rhs = (u8*)b;
@@ -1922,9 +1936,9 @@ CBA_DEF b32 is_little_endian()
     return *((u8*)&x);
 }
 
-CBA_DEF usz count_bits(u64 mask)
+CBA_DEF sz count_bits(u64 mask)
 {
-    usz result = 0;
+    sz result = 0;
 
     while (mask)
     {
@@ -1935,9 +1949,9 @@ CBA_DEF usz count_bits(u64 mask)
     return result;
 }
 
-CBA_DEF usz next_pow2(usz x)
+CBA_DEF sz next_pow2(sz x)
 {
-    uninit usz result;
+    uninit sz result;
 
     if (x == 0)
     {
@@ -2059,20 +2073,20 @@ CBA_DEF String git_committer_name()
     return result;
 }
 
-CBA_DEF void* arena_alloc(Arena* arena, usz size)
+CBA_DEF void* arena_alloc(Arena* arena, sz size)
 {
     void* result = NULL;
 
-    usz alignment_offset = 0;
-    isz curr = (isz)(arena->base + arena->used);
-    isz mask = (isz)CBA_ALIGNMENT - 1;
+    sz alignment_offset = 0;
+    sz curr = (sz)(arena->base + arena->used);
+    sz mask = (sz)CBA_ALIGNMENT - 1;
 
     if (curr & mask)
     {
-        alignment_offset = (usz)((isz)CBA_ALIGNMENT - (curr & mask));
+        alignment_offset = (sz)((sz)CBA_ALIGNMENT - (curr & mask));
     }
 
-    usz effective_size = size + alignment_offset;
+    sz effective_size = size + alignment_offset;
 
     if ((arena->used + effective_size) > arena->capacity)
     {
@@ -2088,19 +2102,19 @@ CBA_DEF void* arena_alloc(Arena* arena, usz size)
             .capacity = arena->capacity,
         };
 
-        uninit usz block_size;
+        uninit sz block_size;
         if (effective_size > arena->min_block_size)
         {
-            block_size = effective_size + sizeof(ArenaBlockFooter);
+            block_size = effective_size + isizeof(ArenaBlockFooter);
         }
         else
         {
-            block_size = arena->min_block_size + sizeof(ArenaBlockFooter);
+            block_size = arena->min_block_size + isizeof(ArenaBlockFooter);
         }
 
         arena->base     = (u8*)calloc(block_size, 1);
         arena->used     = 0;
-        arena->capacity = block_size - sizeof(ArenaBlockFooter);
+        arena->capacity = block_size - isizeof(ArenaBlockFooter);
 
         *get_arena_footer(arena) = new_footer;
     }
@@ -2125,17 +2139,17 @@ CBA_DEF void arena_free(Arena* arena)
         arena->capacity = footer.capacity;
     }
 
-    memz(arena, sizeof(Arena));
+    memz(arena, isizeof(Arena));
 }
 
-CBA_DEF usz arena_used(Arena* arena)
+CBA_DEF sz arena_used(Arena* arena)
 {
-    usz result = 0;
+    sz result = 0;
 
     u8* base = arena->base;
 
     result += arena->used;
-    usz capacity = arena->capacity;
+    sz capacity = arena->capacity;
 
     while (base)
     {
@@ -2150,14 +2164,14 @@ CBA_DEF usz arena_used(Arena* arena)
     return result;
 }
 
-CBA_DEF usz arena_allocated(Arena* arena)
+CBA_DEF sz arena_allocated(Arena* arena)
 {
-    usz result = 0;
+    sz result = 0;
 
     u8* base = arena->base;
 
     result += arena->capacity;
-    usz capacity = arena->capacity;
+    sz capacity = arena->capacity;
 
     while (base)
     {
@@ -2264,26 +2278,26 @@ static inline void _close_fd(FileDescriptor fd)
 #endif
 }
 
-static usz _seek_fd(FileDescriptor fd, b32 end)
+static sz _seek_fd(FileDescriptor fd, b32 end)
 {
-    usz result = 0;
+    sz result = 0;
 
     cba_assert(fd != INVALID_HANDLE, "cannot seek with an invalid file descriptor");
 
 #if CBA_WINDOWS
     DWORD pos = SetFilePointer(fd, 0, NULL, end ? FILE_END : FILE_BEGIN);
     cba_assert(pos != INVALID_SET_FILE_POINTER, "failed to seek file: %s", _os_error());
-    result = (usz)pos;
+    result = (sz)pos;
 #else
-    result = (usz)lseek(fd, 0, end ? SEEK_END : SEEK_SET);
+    result = (sz)lseek(fd, 0, end ? SEEK_END : SEEK_SET);
 #endif
 
     return result;
 }
 
-static isz _read_fd(FileDescriptor fd, void* memory, usz bytes)
+static sz _read_fd(FileDescriptor fd, void* memory, sz bytes)
 {
-    isz result = 0;
+    sz result = 0;
 
 #if CBA_WINDOWS
     // @fixme: this doesn't always seem write to `memory`.
@@ -2292,14 +2306,14 @@ static isz _read_fd(FileDescriptor fd, void* memory, usz bytes)
 
     if (success)
     {
-        result = (isz)bytes_read;
+        result = (sz)bytes_read;
     }
     else
     {
         result = -1;
     }
 #else
-    result = (isz)read(fd, memory, bytes);
+    result = (sz)read(fd, memory, bytes);
 #endif
 
     return result;
@@ -2322,7 +2336,7 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths)
 
         if (got_output_file_time)
         {
-            for (usz i = 0; i < input_paths.count; ++i)
+            for (sz i = 0; i < input_paths.count; ++i)
             {
                 char* input_path_cstr = str_to_cstr(input_paths.items[i]);
 
@@ -2382,7 +2396,7 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths)
     {
         time_t output_path_time = statbuf.st_mtime;
 
-        for (usz i = 0; i < input_paths.count; ++i)
+        for (sz i = 0; i < input_paths.count; ++i)
         {
             char* input_path_cstr = str_to_cstr(input_paths.items[i]);
 
@@ -2495,7 +2509,7 @@ CBA_DEF b32 file_copy(const char* path, const char* new_path, b32 symbolic_link)
     }
     else
     {
-        uninit isz size;
+        uninit sz size;
         FileDescriptor existing_fd = open(path, O_RDONLY, 0);
         FileDescriptor new_fd      = open(new_path, O_WRONLY | O_CREAT, 0666);
 
@@ -2672,16 +2686,16 @@ CBA_DEF FileKind file_get_kind(const char* path)
     return result;
 }
 
-CBA_DEF usz file_length(const char* path)
+CBA_DEF sz file_length(const char* path)
 {
-    usz result = 0;
+    sz result = 0;
 
 #if CBA_WINDOWS
     uninit WIN32_FILE_ATTRIBUTE_DATA attribute_data;
     if (GetFileAttributesExA(path, GetFileExInfoStandard, &attribute_data))
     {
 #if CBA_64_BIT
-        result = ((usz)attribute_data.nFileSizeHigh << 32) | attribute_data.nFileSizeLow;
+        result = ((sz)attribute_data.nFileSizeHigh << 32) | attribute_data.nFileSizeLow;
 #else
         result = attribute_data.nFileSizeLow;
 #endif
@@ -2694,7 +2708,7 @@ CBA_DEF usz file_length(const char* path)
     uninit struct stat statbuf;
     if (lstat(path, &statbuf) >= 0)
     {
-        result = (usz)statbuf.st_size;
+        result = (sz)statbuf.st_size;
     }
     else
     {
@@ -2705,7 +2719,7 @@ CBA_DEF usz file_length(const char* path)
     return result;
 }
 
-CBA_DEF b32 file_read(const char* path, void* dest, usz bytes)
+CBA_DEF b32 file_read(const char* path, void* dest, sz bytes)
 {
     b32 result = false;
 
@@ -2716,7 +2730,7 @@ CBA_DEF b32 file_read(const char* path, void* dest, usz bytes)
 
     if (f)
     {
-        usz bytes_read = fread(dest, 1, bytes, f);
+        sz bytes_read = fread(dest, 1, bytes, f);
 
         if (bytes_read == 0)
         {
@@ -2737,7 +2751,7 @@ CBA_DEF b32 file_read(const char* path, void* dest, usz bytes)
     return result;
 }
 
-CBA_DEF b32 file_write(const char* path, void* memory, usz bytes, b32 append)
+CBA_DEF b32 file_write(const char* path, void* memory, sz bytes, b32 append)
 {
     b32 result = false;
 
@@ -2756,7 +2770,7 @@ CBA_DEF b32 file_write(const char* path, void* memory, usz bytes, b32 append)
 
     if (f)
     {
-        usz bytes_written = fwrite(memory, 1, bytes, f);
+        sz bytes_written = fwrite(memory, 1, bytes, f);
 
         if (!bytes_written && !feof(f))
         {
@@ -2828,7 +2842,7 @@ CBA_DEF b32 file_try_create_directory(const char* path)
 
         if (parent_paths.items)
         {
-            for (usz i = 0; i < parent_paths.count; ++i)
+            for (sz i = 0; i < parent_paths.count; ++i)
             {
                 char* path_cstr = (char*)str_to_cstr(parent_paths.items[i]);
                 if (!_create_dir(path_cstr))
@@ -2933,7 +2947,7 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
                 }
             }
 
-            str_append_chars(&entry, (char*)dent->d_name, (usz)dent->d_namlen);
+            str_append_chars(&entry, (char*)dent->d_name, (sz)dent->d_namlen);
 
             if (!str_ends_with(entry, ".") && !str_ends_with(entry, ".."))
             {
@@ -2961,9 +2975,9 @@ static inline String _cmd_flatten_win32(Command cmd)
 {
     String result = {0};
 
-    usz capacity = 1;
+    sz capacity = 1;
 
-    for (usz i = 0; i < cmd.count; ++i)
+    for (sz i = 0; i < cmd.count; ++i)
     {
         capacity += cmd.items[i].cap; 
     }
@@ -2971,7 +2985,7 @@ static inline String _cmd_flatten_win32(Command cmd)
     // @todo: no longer needed?
     result = str_alloc_with_cap(capacity * 2);
 
-    for (usz i = 0; i < cmd.count; ++i)
+    for (sz i = 0; i < cmd.count; ++i)
     {
         String* arg = &cmd.items[i];
         cba_assert(arg->len, "argument should not be empty");
@@ -2983,10 +2997,10 @@ static inline String _cmd_flatten_win32(Command cmd)
 
         if (str_find_first_of_any_in_cstr(*arg, " \t\n\v\"", true, NULL))
         {
-            usz backslashes = 0;
+            sz backslashes = 0;
             str_append_char(&result, '\"');
 
-            for (usz ii = 0; ii < arg->len; ++ii)
+            for (sz ii = 0; ii < arg->len; ++ii)
             {
                 char ch = arg->data[ii];
 
@@ -2998,7 +3012,7 @@ static inline String _cmd_flatten_win32(Command cmd)
                 {
                     if (ch == '\"')
                     {
-                        for (usz iii = 0; iii < (backslashes + 1); ++iii)
+                        for (sz iii = 0; iii < (backslashes + 1); ++iii)
                         {
                             str_append_char(&result, '\\');
                         }
@@ -3010,7 +3024,7 @@ static inline String _cmd_flatten_win32(Command cmd)
                 str_append_char(&result, ch);
             }
 
-            for (usz ii = 0; ii < backslashes; ++ii)
+            for (sz ii = 0; ii < backslashes; ++ii)
             {
                 str_append_char(&result, '\\');
             }
@@ -3101,7 +3115,7 @@ CBA_DEF ProcessID proc_start(Command cmd, FileDescriptor output_fd)
                 // @jcg: this is the memory allocated to the child process' arguments, so
                 // it needs to be allocated permanently to outlive the child process.
                 char** arr = alloc_array(cmd.count + 1, char*);
-                for (usz i = 0; i < cmd.count; ++i)
+                for (sz i = 0; i < cmd.count; ++i)
                 {
                     arr[i] = alloc_array(cmd.items[i].len + 1, char);
                     memcpy(arr[i], cmd.items[i].data, cmd.items[i].len);
@@ -3219,14 +3233,14 @@ CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code)
     return result;
 }
 
-CBA_DEF i32 __proc_wait_va(usz n, ...)
+CBA_DEF i32 __proc_wait_va(sz n, ...)
 {
     i32 result = 1;
 
     uninit va_list args;
     va_start(args, n);
 
-    for (usz i = 0; i < n; ++i)
+    for (sz i = 0; i < n; ++i)
     {
         ProcessID arg = va_arg(args, ProcessID);
         i32 r = proc_wait(arg, NULL);
@@ -3249,7 +3263,7 @@ CBA_DEF i32 __proc_wait_va(usz n, ...)
 
 // @mark: strings
 
-CBA_DEF void _str_resize(String* str, usz new_len)
+CBA_DEF void _str_resize(String* str, sz new_len)
 {
     new_len = max(new_len, CBA_MIN_STRING_CAPACITY);
 
@@ -3261,7 +3275,7 @@ CBA_DEF void _str_resize(String* str, usz new_len)
 
     if (new_len > str->cap)
     {
-        usz new_cap = next_pow2(new_len) + 1;
+        sz new_cap = next_pow2(new_len) + 1;
 
         char* new_data = alloc_array(new_cap, char);
         memcpy(new_data, str->data, str->len);
@@ -3284,7 +3298,7 @@ CBA_DEF String str_alloc(void)
     return result;
 }
 
-CBA_DEF String str_alloc_with_cap(usz cap)
+CBA_DEF String str_alloc_with_cap(sz cap)
 {
     String result = {0};
     _str_resize(&result, cap);
@@ -3305,7 +3319,7 @@ CBA_DEF String str_sprintf(const char* fmt, ...)
     // @jcg: in a nutshell, vsnprintf returns the length minus a null-terminator when used
     // as above, but will append a null-terminator anyway when used as below - hence the
     // cap + 1 for the allocation.
-    usz cap = max(len, CBA_MIN_STRING_CAPACITY);
+    sz cap = max(len, CBA_MIN_STRING_CAPACITY);
     _str_resize(&result, cap);
     result.len = len;
     vsnprintf(result.data, len + 1, fmt, args);
@@ -3317,7 +3331,7 @@ CBA_DEF String str_sprintf(const char* fmt, ...)
 
 CBA_DEF String str_from_cstr(const char* cstr)
 {
-    usz len = (usz)strlen(cstr);
+    sz len = (sz)strlen(cstr);
 
     String result = {0};
     _str_resize(&result, len);
@@ -3328,7 +3342,7 @@ CBA_DEF String str_from_cstr(const char* cstr)
     return result;
 }
 
-CBA_DEF String str_from_chars(char* buffer, usz count)
+CBA_DEF String str_from_chars(char* buffer, sz count)
 {
     String result = {0};
     _str_resize(&result, count);
@@ -3347,7 +3361,7 @@ CBA_DEF String str_from_file(const char* file_path)
     cba_assert(f, "failed to open file \"%s\" for reading: %s", file_path, strerror(errno));
 
     fseek(f, 0, SEEK_END);
-    usz len = (usz)ftell(f);
+    sz len = (sz)ftell(f);
     fseek(f, 0, SEEK_SET);
 
     if (len)
@@ -3355,7 +3369,7 @@ CBA_DEF String str_from_file(const char* file_path)
         _str_resize(&result, len);
         result.len = len;
 
-        usz bytes_read = (usz)fread(result.data, 1, len, f);
+        sz bytes_read = (sz)fread(result.data, 1, len, f);
         cba_assert(bytes_read > 0, "no bytes were read from \"%s\"", file_path);
     }
 
@@ -3376,7 +3390,7 @@ CBA_DEF String str_from_cwd(void)
 
     cba_assert(cwd, "failed to obtain current working directory");
 
-    result.len = (usz)strlen(cwd);
+    result.len = (sz)strlen(cwd);
 
     return result;
 }
@@ -3389,7 +3403,7 @@ CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append)
 
     if (f)
     {
-        usz bytes_written = fwrite(s.data, 1, s.len, f);
+        sz bytes_written = fwrite(s.data, 1, s.len, f);
 
         if (!bytes_written && !feof(f))
         {
@@ -3411,7 +3425,7 @@ CBA_DEF b32 str_write_to_file(String s, const char* path, b32 append)
     return result;
 }
 
-CBA_DEF String str_slice(String str, usz start, usz len)
+CBA_DEF String str_slice(String str, sz start, sz len)
 {
     cba_assert((start + len) <= str.len,
                "string slice exceeds the string's length (start: %zu, len: %zu, string len: %zu)",
@@ -3426,7 +3440,7 @@ CBA_DEF String str_slice(String str, usz start, usz len)
     return result;
 }
 
-CBA_DEF void str_shrink_left(String* str, usz shift)
+CBA_DEF void str_shrink_left(String* str, sz shift)
 {
     cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
@@ -3435,7 +3449,7 @@ CBA_DEF void str_shrink_left(String* str, usz shift)
     str->cap -= shift;
 }
 
-CBA_DEF void str_shrink_right(String* str, usz shift)
+CBA_DEF void str_shrink_right(String* str, sz shift)
 {
     cba_assert(str->len >= shift, "shift of %zu exceeds string's length of %zu", shift, str->len);
 
@@ -3447,7 +3461,7 @@ CBA_DEF String str_path_file_name(String str, b32 include_extension)
 {
     String result = str;
 
-    uninit usz separator_pos;
+    uninit sz separator_pos;
     b32 found_separator = str_find_last_char(str, '/',  &separator_pos) ||
                           str_find_last_char(str, '\\', &separator_pos);
 
@@ -3461,7 +3475,7 @@ CBA_DEF String str_path_file_name(String str, b32 include_extension)
 
     if (!include_extension)
     {
-        uninit usz dot_pos;
+        uninit sz dot_pos;
         if (str_find_last_char(str, '.', &dot_pos))
         {
             result.len -= str.len - dot_pos;
@@ -3476,7 +3490,7 @@ CBA_DEF String str_path_file_extension(String str)
 {
     String result = {0};
 
-    uninit usz dot_pos;
+    uninit sz dot_pos;
     if (str_find_last_char(str, '.', &dot_pos))
     {
         result.data = str.data + dot_pos;
@@ -3491,7 +3505,7 @@ CBA_DEF String str_path_pwd(String str)
 {
     String result = {0};
 
-    uninit usz separator_pos;
+    uninit sz separator_pos;
     b32 found_separator = str_find_last_char(str, '/', &separator_pos) ||
                           str_find_last_char(str, '\\', &separator_pos);
 
@@ -3548,7 +3562,7 @@ CBA_DEF String str_path_to_absolute(String str)
     }
     else
     {
-        result.len = strlen(result.data);
+        result.len = (sz)strlen(result.data);
     }
 #endif
 
@@ -3567,7 +3581,7 @@ CBA_DEF StringArray str_to_parent_paths(String path)
 
     b32 last_was_separator = false;
 
-    for (usz i = 0; i < path.len; ++i)
+    for (sz i = 0; i < path.len; ++i)
     {
         if (is_separator(path.data[i]))
         {
@@ -3652,7 +3666,7 @@ CBA_DEF void str_append_line_ending(String* str)
 {
 #if CBA_WINDOWS
     char buf[] = { '\r', '\n' };
-    str_append_chars(str, buf, sizeof(buf));
+    str_append_chars(str, buf, isizeof(buf));
 #else
     str_append_char(str, '\n');
 #endif
@@ -3667,14 +3681,14 @@ CBA_DEF void str_append_char(String* str, char ch)
 
 CBA_DEF void str_append_cstr(String* str, const char* cstr)
 {
-    usz len = (usz)strlen(cstr);
+    sz len = (sz)strlen(cstr);
 
     _str_resize(str, str->len + len);
     memcpy(str->data + str->len, cstr, len);
     str->len += len;
 }
 
-CBA_DEF void str_append_chars(String* str, char* buffer, usz count)
+CBA_DEF void str_append_chars(String* str, char* buffer, sz count)
 {
     _str_resize(str, str->len + count);
     memcpy(str->data + str->len, buffer, count);
@@ -3711,13 +3725,13 @@ CBA_DEF void str_prepend_char(String* str, char ch)
 
 CBA_DEF void str_prepend_cstr(String* str, const char* cstr)
 {
-    usz len = (usz)strlen(cstr);
+    sz len = (sz)strlen(cstr);
 
     str_rshift(str, 0, len);
     memcpy(str->data, cstr, len);
 }
 
-CBA_DEF void str_prepend_chars(String* str, char* buffer, usz count)
+CBA_DEF void str_prepend_chars(String* str, char* buffer, sz count)
 {
     str_rshift(str, 0, count);
     memcpy(str->data, buffer, count);
@@ -3745,7 +3759,7 @@ CBA_DEF void str_prependf(String* str, const char* fmt, ...)
 
 CBA_DEF void str_to_lower(String* str)
 {
-    for (usz i = 0; i < str->len; ++i)
+    for (sz i = 0; i < str->len; ++i)
     {
         if (is_upper(str->data[i]))
         {
@@ -3756,7 +3770,7 @@ CBA_DEF void str_to_lower(String* str)
 
 CBA_DEF void str_to_upper(String* str)
 {
-    for (usz i = 0; i < str->len; ++i)
+    for (sz i = 0; i < str->len; ++i)
     {
         if (is_lower(str->data[i]))
         {
@@ -3765,7 +3779,7 @@ CBA_DEF void str_to_upper(String* str)
     }
 }
 
-CBA_DEF void str_lshift(String* str, usz start, usz shift)
+CBA_DEF void str_lshift(String* str, sz start, sz shift)
 {
     if (!shift) return;
 
@@ -3776,7 +3790,7 @@ CBA_DEF void str_lshift(String* str, usz start, usz shift)
                "string shift would underflow (start: %zu, shift: %zu)",
                start, shift);
 
-    for (usz i = start; i < str->len; ++i)
+    for (sz i = start; i < str->len; ++i)
     {
         str->data[i - shift] = str->data[i];
     }
@@ -3786,7 +3800,7 @@ CBA_DEF void str_lshift(String* str, usz start, usz shift)
     memz(str->data + str->len, shift);
 }
 
-CBA_DEF void str_rshift(String* str, usz start, usz shift)
+CBA_DEF void str_rshift(String* str, sz start, sz shift)
 {
     if (!shift) return;
 
@@ -3796,10 +3810,10 @@ CBA_DEF void str_rshift(String* str, usz start, usz shift)
 
     _str_resize(str, str->len + shift);
 
-    usz new_len = str->len + shift;
-    usz end = start + shift;
+    sz new_len = str->len + shift;
+    sz end = start + shift;
 
-    for (usz i = (new_len - 1); i >= end; --i)
+    for (sz i = (new_len - 1); i >= end; --i)
     {
         str->data[i] = str->data[i - shift];
     }
@@ -3808,37 +3822,37 @@ CBA_DEF void str_rshift(String* str, usz start, usz shift)
     str->len = new_len;
 }
 
-CBA_DEF void str_insert_char(String* str, usz at, char ch)
+CBA_DEF void str_insert_char(String* str, sz at, char ch)
 {
     str_rshift(str, at, 1);
     str->data[at] = ch;
 }
 
-CBA_DEF void str_insert_other(String* str, usz at, String other)
+CBA_DEF void str_insert_other(String* str, sz at, String other)
 {
     str_rshift(str, at, other.len);
     memcpy(str->data + at, other.data, other.len);
 }
 
-CBA_DEF void str_insert_cstr(String* str, usz at, const char* cstr)
+CBA_DEF void str_insert_cstr(String* str, sz at, const char* cstr)
 {
-    usz len = (usz)strlen(cstr);
+    sz len = (sz)strlen(cstr);
     str_rshift(str, at, len);
     memcpy(str->data + at, cstr, len);
 }
 
-CBA_DEF void str_remove(String* str, usz at)
+CBA_DEF void str_remove(String* str, sz at)
 {
     cba_assert(str->len > 0, "tried to remove from an empty string (zero length)");
     str_lshift(str, at + 1, 1);
 }
 
-CBA_DEF void str_remove_range(String* str, usz start, usz end)
+CBA_DEF void str_remove_range(String* str, sz start, sz end)
 {
     cba_assert(str->len > 0, "tried to remove from an empty string (zero length)");
     cba_assert(end >= start, "incorrect removal range (start: %zu, end: %zu)", start, end);
 
-    usz count = end - start;
+    sz count = end - start;
     if (count > end)
     {
         count = end;
@@ -3849,7 +3863,7 @@ CBA_DEF void str_remove_range(String* str, usz start, usz end)
 
 CBA_DEF void str_replace_chars(String* str, char from, char to)
 {
-    for (usz i = 0; i < str->len; ++i)
+    for (sz i = 0; i < str->len; ++i)
     {
         if (str->data[i] == from)
         {
@@ -3863,17 +3877,17 @@ CBA_DEF void str_replace_others(String* str, String from, String to)
     if (!from.len || (str->len < from.len)) return;
 
     b32 left_shift = to.len < from.len;
-    usz shift_amount = left_shift
+    sz shift_amount = left_shift
                          ? (from.len - to.len)
                          : (to.len - from.len);
 
-    usz pos = 0;
+    sz pos = 0;
 
     while (pos <= (str->len - from.len))
     {
         b32 matched = true;
 
-        for (usz i = 0; i < from.len; ++i)
+        for (sz i = 0; i < from.len; ++i)
         {
             if (str->data[pos + i] != from.data[i])
             {
@@ -3884,7 +3898,7 @@ CBA_DEF void str_replace_others(String* str, String from, String to)
 
         if (matched)
         {
-            usz shift_start = pos + from.len;
+            sz shift_start = pos + from.len;
 
             if (left_shift)
             {
@@ -3907,23 +3921,23 @@ CBA_DEF void str_replace_others(String* str, String from, String to)
 
 CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to)
 {
-    usz from_len = (usz)strlen(from);
-    usz to_len = (usz)strlen(to);
+    sz from_len = (sz)strlen(from);
+    sz to_len = (sz)strlen(to);
 
     if (!from_len || (str->len < from_len)) return;
 
     b32 left_shift = to_len < from_len;
-    usz shift_amount = left_shift
+    sz shift_amount = left_shift
                              ? (from_len - to_len)
                              : (to_len - from_len);
 
-    usz pos = 0;
+    sz pos = 0;
 
     while (pos <= (str->len - from_len))
     {
         b32 matched = true;
 
-        for (usz i = 0; i < from_len; ++i)
+        for (sz i = 0; i < from_len; ++i)
         {
             if (str->data[pos + i] != from[i])
             {
@@ -3934,7 +3948,7 @@ CBA_DEF void str_replace_cstrs(String* str, const char* from, const char* to)
 
         if (matched)
         {
-            usz shift_start = pos + from_len;
+            sz shift_start = pos + from_len;
 
             if (left_shift)
             {
@@ -3961,16 +3975,16 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims)
 
     if (!str->len) return false;
 
-    usz num_delims = (usz)strlen(delims);
+    sz num_delims = (sz)strlen(delims);
 
-    isz start = 0;
-    isz end = str->len - 1;
+    sz start = 0;
+    sz end = str->len - 1;
 
-    for (; start < (isz)str->len; ++start)
+    for (; start < (sz)str->len; ++start)
     {
         b32 found = false;
 
-        for (usz c = 0; c < num_delims; ++c)
+        for (sz c = 0; c < num_delims; ++c)
         {
             if (str->data[start] == delims[c])
             {
@@ -3987,7 +4001,7 @@ CBA_DEF b32 str_trim_chars(String* str, const char* delims)
     {
         b32 found = false;
 
-        for (usz c = 0; c < num_delims; ++c)
+        for (sz c = 0; c < num_delims; ++c)
         {
             if (str->data[end] == delims[c])
             {
@@ -4017,10 +4031,10 @@ CBA_DEF b32 str_trim_null(String* str)
 
     if (str->len)
     {
-        isz start = 0;
-        isz end = str->len - 1;
+        sz start = 0;
+        sz end = str->len - 1;
 
-        for (; start < (isz)str->len; ++start)
+        for (; start < (sz)str->len; ++start)
         {
             if (str->data[start] != '\0')
             {
@@ -4047,9 +4061,18 @@ CBA_DEF StringArray str_split_by(String str, char delim)
 {
     StringArray result = {0};
 
-    CBA_UNUSED(str); CBA_UNUSED(delim);
+    String tmp = {0};
 
-    todo();
+    while (str_chop_up_to_char(&str, &tmp, delim))
+    {
+        String s = str_copy(tmp);
+        str_arr_append_str(&result, s);
+    }
+
+    if (!result.count)
+    {
+        str_arr_append_str(&result, str);
+    }
 
     return result;
 }
@@ -4071,7 +4094,7 @@ CBA_DEF StringArray str_split_lines(String str)
 
         str_arr_append_str(&result, s);
 
-        usz shift = 0;
+        sz shift = 0;
 
         while ((shift < str.len) && ((str.data[shift] == '\r') || (str.data[shift] == '\n')))
         {
@@ -4096,7 +4119,7 @@ CBA_DEF b32 str_eq(String a, String b)
 
 CBA_DEF b32 str_eq_cstr(String str, const char* cstr)
 {
-    return (str.len == (usz)strlen(cstr)) && (memcmp(str.data, cstr, str.len) == 0);
+    return (str.len == (sz)strlen(cstr)) && (memcmp(str.data, cstr, str.len) == 0);
 }
 
 CBA_DEF b32 str_eq_ignoring_case(String a, String b)
@@ -4105,7 +4128,7 @@ CBA_DEF b32 str_eq_ignoring_case(String a, String b)
 
     if (a.len == b.len)
     {
-        for (usz i = 0; i < a.len; ++i)
+        for (sz i = 0; i < a.len; ++i)
         {
             char cha = a.data[i];
             char chb = b.data[i];
@@ -4132,11 +4155,11 @@ CBA_DEF b32 str_eq_cstr_ignoring_case(String str, const char* cstr)
 {
     b32 result = true;
 
-    usz b_len = (usz)strlen(cstr);
+    sz b_len = (sz)strlen(cstr);
 
     if (str.len == b_len)
     {
-        for (usz i = 0; i < str.len; ++i)
+        for (sz i = 0; i < str.len; ++i)
         {
             char cha = str.data[i];
             char chb = cstr[i];
@@ -4161,7 +4184,7 @@ CBA_DEF b32 str_eq_cstr_ignoring_case(String str, const char* cstr)
 
 CBA_DEF b32 str_starts_with(String str, const char* cstr)
 {
-    usz len = (usz)strlen(cstr);
+    sz len = (sz)strlen(cstr);
     return (str.len >= len) && (memcmp(str.data, cstr, len) == 0);
 }
 
@@ -4169,7 +4192,7 @@ CBA_DEF b32 str_ends_with(String str, const char* cstr)
 {
     b32 result = false;
 
-    usz len = (usz)strlen(cstr);
+    sz len = (sz)strlen(cstr);
 
     if (len <= str.len)
     {
@@ -4180,18 +4203,18 @@ CBA_DEF b32 str_ends_with(String str, const char* cstr)
     return result;
 }
 
-CBA_DEF b32 str_find_first_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_first_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, sz* where)
 {
-    return str_find_first_of_any(haystack, needles, (usz)strlen(needles), case_sensitive, where);
+    return str_find_first_of_any(haystack, needles, (sz)strlen(needles), case_sensitive, where);
 }
 
-CBA_DEF b32 str_find_first_of_any(String haystack, const char* needles, usz count, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_first_of_any(String haystack, const char* needles, sz count, b32 case_sensitive, sz* where)
 {
     b32 result = false;
 
-    for (usz i = 0; i < haystack.len; ++i)
+    for (sz i = 0; i < haystack.len; ++i)
     {
-        for (usz ii = 0; ii < count; ++ii)
+        for (sz ii = 0; ii < count; ++ii)
         {
             char a = haystack.data[i];
             char b = needles[ii];
@@ -4215,20 +4238,20 @@ outer:
     return result;
 }
 
-CBA_DEF b32 str_find_last_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_last_of_any_in_cstr(String haystack, const char* needles, b32 case_sensitive, sz* where)
 {
-    return str_find_last_of_any(haystack, needles, (usz)strlen(needles), case_sensitive, where);
+    return str_find_last_of_any(haystack, needles, (sz)strlen(needles), case_sensitive, where);
 }
 
-CBA_DEF b32 str_find_last_of_any(String haystack, const char* needles, usz count, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_last_of_any(String haystack, const char* needles, sz count, b32 case_sensitive, sz* where)
 {
     b32 result = false;
 
-    for (usz i = 0; i < haystack.len; ++i)
+    for (sz i = 0; i < haystack.len; ++i)
     {
-        usz idx = haystack.len - i - 1;
+        sz idx = haystack.len - i - 1;
 
-        for (usz ii = 0; ii < count; ++ii)
+        for (sz ii = 0; ii < count; ++ii)
         {
             char a = haystack.data[idx];
             char b = needles[ii];
@@ -4252,22 +4275,22 @@ outer:
     return result;
 }
 
-CBA_DEF b32 str_find_first_char(String haystack, char needle, usz* where)
+CBA_DEF b32 str_find_first_char(String haystack, char needle, sz* where)
 {
     return str_find_first_char_from(haystack, needle, 0, where);
 }
 
-CBA_DEF b32 str_find_last_char(String haystack, char needle, usz* where)
+CBA_DEF b32 str_find_last_char(String haystack, char needle, sz* where)
 {
     return haystack.len && str_find_last_char_from(haystack, needle, haystack.len - 1, where);
 }
 
-CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_first_other(String haystack, String needle, b32 case_sensitive, sz* where)
 {
     return str_find_first_other_from(haystack, needle, 0, case_sensitive, where);
 }
 
-CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensitive, sz* where)
 {
     // @todo: could be implemented in terms of str_find_last_other_from?
     b32 result = false;
@@ -4275,13 +4298,13 @@ CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensiti
     if (haystack.len && needle.len && (haystack.len > needle.len))
     {
         // @todo: this might be off by one
-        isz off = haystack.len - needle.len;
+        sz off = haystack.len - needle.len;
 
         do
         {
             b32 mismatch = false;
 
-            for (usz i = 0; i < needle.len; ++i)
+            for (sz i = 0; i < needle.len; ++i)
             {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
@@ -4321,7 +4344,7 @@ CBA_DEF b32 str_find_last_other(String haystack, String needle, b32 case_sensiti
     return result;
 }
 
-CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_sensitive, sz* where)
 {
     uninit b32 result;
 
@@ -4331,7 +4354,7 @@ CBA_DEF b32 str_find_first_cstr(String haystack, const char* needle, b32 case_se
     return result;
 }
 
-CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sensitive, sz* where)
 {
     uninit b32 result;
 
@@ -4341,7 +4364,7 @@ CBA_DEF b32 str_find_last_cstr(String haystack, const char* needle, b32 case_sen
     return result;
 }
 
-CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usz from, usz* where)
+CBA_DEF b32 str_find_first_char_from(String haystack, char needle, sz from, sz* where)
 {
     cba_assert(from < haystack.len,
                "cannot find outside of string's bounds (len: %zu, from: %zu)",
@@ -4349,7 +4372,7 @@ CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usz from, usz
 
     b32 result = false;
 
-    for (usz i = from; i < haystack.len; ++i)
+    for (sz i = from; i < haystack.len; ++i)
     {
         if (haystack.data[i] == needle)
         {
@@ -4366,7 +4389,7 @@ CBA_DEF b32 str_find_first_char_from(String haystack, char needle, usz from, usz
     return result;
 }
 
-CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usz from, usz* where)
+CBA_DEF b32 str_find_last_char_from(String haystack, char needle, sz from, sz* where)
 {
     cba_assert(from < haystack.len,
                "cannot find outside of string's bounds (len: %zu, from: %zu)",
@@ -4376,9 +4399,9 @@ CBA_DEF b32 str_find_last_char_from(String haystack, char needle, usz from, usz*
 
     if (haystack.len)
     {
-        for (usz i = 0; i <= from; ++i)
+        for (sz i = 0; i <= from; ++i)
         {
-            usz idx = haystack.len - i - 1;
+            sz idx = haystack.len - i - 1;
 
             if (haystack.data[idx] == needle)
             {
@@ -4400,7 +4423,7 @@ CBA_DEF u64 str_count_chars(String haystack, char needle)
 {
     u64 result = 0;
 
-    for (usz i = 0; i < haystack.len; ++i)
+    for (sz i = 0; i < haystack.len; ++i)
     {
         if (haystack.data[i] == needle)
         {
@@ -4426,7 +4449,7 @@ CBA_DEF b32 str_contains_other(String haystack, String needle, b32 case_sensitiv
     return str_find_first_other(haystack, needle, case_sensitive, NULL);
 }
 
-CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usz from, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_first_other_from(String haystack, String needle, sz from, b32 case_sensitive, sz* where)
 {
     // @todo: potentially an off-by-one when the needle as at the end of the string?
     cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
@@ -4435,14 +4458,14 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usz from, 
 
     if (haystack.len && needle.len && (haystack.len > needle.len))
     {
-        usz iters = haystack.len - needle.len - from + 1;
-        usz off = from;
+        sz iters = haystack.len - needle.len - from + 1;
+        sz off = from;
 
         do
         {
             b32 mismatch = false;
 
-            for (usz i = 0; i < needle.len; ++i)
+            for (sz i = 0; i < needle.len; ++i)
             {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
@@ -4479,7 +4502,7 @@ CBA_DEF b32 str_find_first_other_from(String haystack, String needle, usz from, 
     return result;
 }
 
-CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usz from, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_last_other_from(String haystack, String needle, sz from, b32 case_sensitive, sz* where)
 {
     cba_assert(from < haystack.len, "cannot start out of the bounds of the string (from %zu, len %zu)", haystack.len, from);
 
@@ -4487,13 +4510,13 @@ CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usz from, b
 
     if (haystack.len && needle.len && (haystack.len > needle.len))
     {
-        isz off = haystack.len - needle.len;
+        sz off = haystack.len - needle.len;
 
         do
         {
             b32 mismatch = false;
 
-            for (usz i = from; i < needle.len; ++i)
+            for (sz i = from; i < needle.len; ++i)
             {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
@@ -4533,7 +4556,7 @@ CBA_DEF b32 str_find_last_other_from(String haystack, String needle, usz from, b
     return result;
 }
 
-CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usz from, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, sz from, b32 case_sensitive, sz* where)
 {
     b32 result = false;
 
@@ -4543,7 +4566,7 @@ CBA_DEF b32 str_find_first_cstr_from(String haystack, const char* needle, usz fr
     return result;
 }
 
-CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, usz from, b32 case_sensitive, usz* where)
+CBA_DEF b32 str_find_last_cstr_from(String haystack, const char* needle, sz from, b32 case_sensitive, sz* where)
 {
     b32 result = false;
 
@@ -4567,14 +4590,14 @@ CBA_DEF u64 str_count_others(String haystack, String needle, b32 case_sensitive)
 
     if (haystack.len > needle.len)
     {
-        usz max_iters = haystack.len - needle.len;
-        usz off = 0;
+        sz max_iters = haystack.len - needle.len;
+        sz off = 0;
 
         do
         {
             b32 mismatch = false;
 
-            for (usz i = 0; i < needle.len; ++i)
+            for (sz i = 0; i < needle.len; ++i)
             {
                 char a = haystack.data[off + i];
                 char b = needle.data[i];
@@ -4612,11 +4635,11 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest)
     b32 result = true;
 
     i64 sign = 1;
-    usz pos = 0;
+    sz pos = 0;
     b32 truncated = false;
     b32 found_digit = false;
 
-    for (usz i = 0; i < str.len; ++i)
+    for (sz i = 0; i < str.len; ++i)
     {
         b32 is_digit = is_numeric(str.data[i]);
         b32 is_decimal = is_decimal(str.data[i]);
@@ -4672,10 +4695,10 @@ CBA_DEF b32 str_parse_to_i64(String str, i64* dest)
 
     if (result)
     {
-        usz start = (sign == -1) ? pos : (pos + 1);
+        sz start = (sign == -1) ? pos : (pos + 1);
 
         i64 factor = 1;
-        for (usz i = start; i < (str.len - pos); ++i)
+        for (sz i = start; i < (str.len - pos); ++i)
         {
             factor *= 10;
         }
@@ -4703,11 +4726,11 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest)
     b32 result = true;
 
     f64 sign = 1.0;
-    usz pos = 0;
+    sz pos = 0;
     i64 decimal_idx = -1;
     b32 found_digit = false;
 
-    for (usz i = 0; i < str.len; ++i)
+    for (sz i = 0; i < str.len; ++i)
     {
         b32 is_digit = is_numeric(str.data[i]);
         b32 is_decimal = is_decimal(str.data[i]);
@@ -4771,7 +4794,7 @@ CBA_DEF b32 str_parse_to_f64(String str, f64* dest)
 
             if (decimal_idx == -1)
             {
-                for (usz i = 1; i < (str.len - pos); ++i)
+                for (sz i = 1; i < (str.len - pos); ++i)
                 {
                     factor *= 10.0;
                 }
@@ -4812,7 +4835,7 @@ CBA_DEF b32 str_chop_up_to_char(String* src, String* dest, char ch)
 {
     b32 result = false;
 
-    for (usz i = 0; i < src->len; ++i)
+    for (sz i = 0; i < src->len; ++i)
     {
         if (src->data[i] == ch)
         {
@@ -4853,11 +4876,11 @@ CBA_DEF b32 str_chop_up_to_other(String* src, String* dest, String other, b32 ca
     // @todo: case sensitive
     CBA_UNUSED(case_sensitive);
 
-    for (usz i = 0; i < src->len; ++i)
+    for (sz i = 0; i < src->len; ++i)
     {
         b32 matches = true;
 
-        for (usz ii = 0; ii < other.len; ++ii)
+        for (sz ii = 0; ii < other.len; ++ii)
         {
             if (src->data[i + ii] != other.data[ii])
             {
@@ -4895,7 +4918,7 @@ CBA_DEF String str_from_current_time()
 #else
     time_t now = time(0);
     struct tm* t = localtime(&now);
-    result.len = (usz)strftime(result.data, 32, "%X", t);
+    result.len = (sz)strftime(result.data, 32, "%X", t);
 #endif
 
     return result;
@@ -4912,15 +4935,15 @@ CBA_DEF String str_from_current_date()
 #else
     time_t now = time(0);
     struct tm* t = localtime(&now);
-    result.len = (usz)strftime(result.data, 32, "%d/%m/%Y", t);
+    result.len = (sz)strftime(result.data, 32, "%d/%m/%Y", t);
 #endif
 
     return result;
 }
 
-CBA_DEF usz str_levenshtein_distance(String a, String b)
+CBA_DEF sz str_levenshtein_distance(String a, String b)
 {
-    usz result = 0;
+    sz result = 0;
 
     if (!a.len)
     {
@@ -4932,25 +4955,25 @@ CBA_DEF usz str_levenshtein_distance(String a, String b)
     }
     else
     {
-        usz* v0 = alloc_array(b.len + 1, usz);
-        usz* v1 = alloc_array(b.len + 1, usz);
+        sz* v0 = alloc_array(b.len + 1, sz);
+        sz* v1 = alloc_array(b.len + 1, sz);
 
-        for (usz i = 0; i < (b.len + 1); ++i)
+        for (sz i = 0; i < (b.len + 1); ++i)
         {
             v0[i] = i;
         }
 
-        for (usz i = 0; i < a.len; ++i)
+        for (sz i = 0; i < a.len; ++i)
         {
             v1[0] = i + 1;
 
-            for (usz ii = 0; ii < b.len; ++ii)
+            for (sz ii = 0; ii < b.len; ++ii)
             {
-                usz cost = (a.data[i] == b.data[ii]) ? 0 : 1;
+                sz cost = (a.data[i] == b.data[ii]) ? 0 : 1;
                 v1[ii + 1] = min(v1[ii] + 1, min(v0[ii + 1] + 1, v0[ii] + cost));
             }
 
-            memcpy(v0, v1, (b.len + 1) * sizeof(usz));
+            memcpy(v0, v1, (b.len + 1) * isizeof(sz));
         }
 
         result = v1[b.len];
@@ -4965,8 +4988,8 @@ CBA_DEF f32 str_levenshtein_similarity(String a, String b)
 
     if (a.len && b.len)
     {
-        usz distance = str_levenshtein_distance(a, b);
-        usz max_len = max(a.len, b.len);
+        sz distance = str_levenshtein_distance(a, b);
+        sz max_len = max(a.len, b.len);
 
         result = 1.0f - ((f32)(distance) / (f32)(max_len));
     }
@@ -4981,12 +5004,12 @@ CBA_DEF char* str_to_cstr(String str)
     return result;
 }
 
-CBA_DEF char* fmt_bytes(usz num_bytes)
+CBA_DEF char* fmt_bytes(sz num_bytes)
 {
-    const usz KB = 1llu << 10;
-    const usz MB = 1llu << 20;
-    const usz GB = 1llu << 30;
-    const usz TB = 1llu << 40;
+    const sz KB = 1llu << 10;
+    const sz MB = 1llu << 20;
+    const sz GB = 1llu << 30;
+    const sz TB = 1llu << 40;
 
     uninit char* result;
 
@@ -5014,13 +5037,13 @@ CBA_DEF char* fmt_bytes(usz num_bytes)
     return result;
 }
 
-CBA_DEF char* _fmt_binary(u64 value, usz width)
+CBA_DEF char* _fmt_binary(u64 value, sz width)
 {
     char* result = alloc_array(width + 1 + (width / 8), char);
 
-    usz pos = 0;
+    sz pos = 0;
 
-    for (usz i = 0; i < width; ++i)
+    for (sz i = 0; i < width; ++i)
     {
         if ((i % 8 == 0) && (i != width - 1))
         {
@@ -5114,7 +5137,7 @@ CBA_DEF const char* fmt_version(Version v)
 
 // @mark: string array
 
-CBA_DEF void _str_arr_resize(StringArray* arr, usz new_len)
+CBA_DEF void _str_arr_resize(StringArray* arr, sz new_len)
 {
     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
         
@@ -5126,11 +5149,11 @@ CBA_DEF void _str_arr_resize(StringArray* arr, usz new_len)
 
     if (new_len > arr->cap)
     {
-        usz new_cap = next_pow2(new_len);
+        sz new_cap = next_pow2(new_len);
 
-        print("reallocating string array to %zu elements", new_cap);
+        verbose_print("reallocating string array to %zu elements", new_cap);
         String* new_data = alloc_array(new_cap, String);
-        memcpy(new_data, arr->items, arr->count * sizeof(String));
+        memcpy(new_data, arr->items, arr->count * isizeof(String));
         arr->items = new_data;
         arr->cap = new_cap;
     }
@@ -5149,12 +5172,12 @@ CBA_DEF void str_arr_append_str(StringArray* arr, String str)
     arr->count += 1;
 }
 
-CBA_DEF void __str_arr_append_va(StringArray* arr, usz n, ...)
+CBA_DEF void __str_arr_append_va(StringArray* arr, sz n, ...)
 {
     uninit va_list args;
     va_start(args, n);
 
-    for (usz i = 0; i < n; ++i)
+    for (sz i = 0; i < n; ++i)
     {
         String arg = va_arg(args, String);
         str_arr_append_str(arr, arg);
@@ -5163,12 +5186,12 @@ CBA_DEF void __str_arr_append_va(StringArray* arr, usz n, ...)
     va_end(args);
 }
 
-CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, usz n, ...)
+CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, sz n, ...)
 {
     uninit va_list args;
     va_start(args, n);
 
-    for (usz i = 0; i < n; ++i)
+    for (sz i = 0; i < n; ++i)
     {
         const char* arg = va_arg(args, const char*);
         str_arr_append_str(arr, str_from_cstr(arg));
@@ -5177,11 +5200,11 @@ CBA_DEF void __str_arr_append_cstrs_va(StringArray* arr, usz n, ...)
     va_end(args);
 }
 
-CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, usz count)
+CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, sz count)
 {
     StringArray result = {0};
 
-    for (usz i = 0; i < count; ++i)
+    for (sz i = 0; i < count; ++i)
     {
         String s = str_from_cstr(arr[i]);
         str_arr_append_str(&result, s);
@@ -5192,7 +5215,7 @@ CBA_DEF StringArray str_arr_from_cstr_arr(char** arr, usz count)
 
 CBA_DEF void str_arr_concat(StringArray* arr, StringArray other)
 {
-    for (usz i = 0; i < other.count; ++i)
+    for (sz i = 0; i < other.count; ++i)
     {
         str_arr_append_str(arr, other.items[i]);
     }
@@ -5204,9 +5227,9 @@ CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator)
     String sep = str_from_cstr(separator);
 
     // @jcg: starts with 1 to keep space for a null-terminator.
-    usz cap = 1;
+    sz cap = 1;
 
-    for (usz i = 0; i < arr.count; ++i)
+    for (sz i = 0; i < arr.count; ++i)
     {
         cap += arr.items[i].len;
         cap += sep.len;
@@ -5214,7 +5237,7 @@ CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator)
 
     result = str_alloc_with_cap(cap);
 
-    for (usz i = 0; i < arr.count; ++i)
+    for (sz i = 0; i < arr.count; ++i)
     {
         str_append_other(&result, arr.items[i]);
 
@@ -5233,7 +5256,7 @@ CBA_DEF String str_arr_flatten_to_str(StringArray arr, const char* separator)
 
 // @mark: commands
 
-CBA_DEF void _cmd_resize(Command* cmd, usz new_len)
+CBA_DEF void _cmd_resize(Command* cmd, sz new_len)
 {
     new_len = max(new_len, CBA_MIN_ARRAY_CAPACITY);
 
@@ -5245,11 +5268,11 @@ CBA_DEF void _cmd_resize(Command* cmd, usz new_len)
 
     if (new_len > cmd->cap)
     {
-        usz new_cap = next_pow2(new_len);
+        sz new_cap = next_pow2(new_len);
 
-        print("reallocating command to %zu elements", new_cap);
+        verbose_print("reallocating command to %zu elements", new_cap);
         String* new_data = alloc_array(new_cap, String);
-        memcpy(new_data, cmd->items, cmd->count * sizeof(String));
+        memcpy(new_data, cmd->items, cmd->count * isizeof(String));
         cmd->cap = new_cap;
     }
 }
@@ -5272,19 +5295,19 @@ CBA_DEF void cmd_append_str(Command* cmd, String str)
 
 CBA_DEF void cmd_append_str_arr(Command* cmd, StringArray arr)
 {
-    for (usz i = 0; i < arr.count; ++i)
+    for (sz i = 0; i < arr.count; ++i)
     {
         cba_assert(arr.items[i].len, "cannot append empty string to command (element %zu of string array)", i);
         cmd_append_str(cmd, arr.items[i]);
     }
 }
 
-CBA_DEF void __cmd_append_va(Command* cmd, usz n, ...)
+CBA_DEF void __cmd_append_va(Command* cmd, sz n, ...)
 {
     uninit va_list args;
     va_start(args, n);
 
-    for (usz i = 0; i < n; ++i)
+    for (sz i = 0; i < n; ++i)
     {
         const char* arg = va_arg(args, const char*);
         cmd_append_str(cmd, str_from_cstr(arg));
@@ -5295,7 +5318,7 @@ CBA_DEF void __cmd_append_va(Command* cmd, usz n, ...)
 
 CBA_DEF void cmd_concat(Command* cmd, Command other)
 {
-    for (usz i = 0; i < other.count; ++i)
+    for (sz i = 0; i < other.count; ++i)
     {
         cmd_append_str(cmd, other.items[i]);
     }
@@ -5303,7 +5326,7 @@ CBA_DEF void cmd_concat(Command* cmd, Command other)
 
 CBA_DEF void cmd_reset(Command* cmd)
 {
-    for (usz i = 0; i < cmd->count; ++i)
+    for (sz i = 0; i < cmd->count; ++i)
     {
         str_clear(&cmd->items[i]);
     }
@@ -5321,17 +5344,17 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args)
     i32 double_quote_pos = -1;
     i32 single_quote_pos = -1;
     b32 last_char_was_space = false;
-    usz next_append_pos = 0;
+    sz next_append_pos = 0;
 
-    for (usz i = 0; i < args_str.len; ++i)
+    for (sz i = 0; i < args_str.len; ++i)
     {
         if (args_str.data[i] == '\"')
         {
             if (double_quote_pos != -1)
             {
-                usz len = i - (usz)double_quote_pos;
-                cba_assert(len != (usz)(-1), "incorrect length");
-                String arg = str_slice(args_str, (usz)double_quote_pos + 1, len - 1);
+                sz len = i - (sz)double_quote_pos;
+                cba_assert(len != (sz)(-1), "incorrect length");
+                String arg = str_slice(args_str, (sz)double_quote_pos + 1, len - 1);
 
                 if (concat_arg.len)
                 {
@@ -5351,8 +5374,8 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args)
 
                 if (!last_char_was_space)
                 {
-                    usz len = i - next_append_pos;
-                    cba_assert(len != (usz)(-1), "incorrect length");
+                    sz len = i - next_append_pos;
+                    cba_assert(len != (sz)(-1), "incorrect length");
                     concat_arg = str_slice(args_str, next_append_pos, len);
 
                     next_append_pos = i + 1;
@@ -5363,9 +5386,9 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args)
         {
             if (single_quote_pos != -1)
             {
-                usz len = i - (usz)single_quote_pos;
-                cba_assert(len != (usz)(-1), "incorrect length");
-                String arg = str_slice(args_str, (usz)single_quote_pos + 1, len - 1);
+                sz len = i - (sz)single_quote_pos;
+                cba_assert(len != (sz)(-1), "incorrect length");
+                String arg = str_slice(args_str, (sz)single_quote_pos + 1, len - 1);
 
                 if (concat_arg.len)
                 {
@@ -5385,8 +5408,8 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args)
 
                 if (!last_char_was_space)
                 {
-                    usz len = i - next_append_pos;
-                    cba_assert(len != (usz)(-1), "incorrect length");
+                    sz len = i - next_append_pos;
+                    cba_assert(len != (sz)(-1), "incorrect length");
                     concat_arg = str_slice(args_str, next_append_pos, len);
 
                     next_append_pos = i + 1;
@@ -5397,8 +5420,8 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args)
         {
             if ((single_quote_pos == -1) && (double_quote_pos == -1) && (i != next_append_pos))
             {
-                usz len = i - next_append_pos;
-                cba_assert(len != (usz)(-1), "incorrect length");
+                sz len = i - next_append_pos;
+                cba_assert(len != (sz)(-1), "incorrect length");
                 String arg = str_slice(args_str, next_append_pos, len);
 
                 cmd_append_str(cmd, str_copy(arg));
@@ -5414,7 +5437,7 @@ CBA_DEF void cmd_append_split(Command* cmd, const char* args)
         }
     }
 
-    usz final_len = args_str.len - next_append_pos;
+    sz final_len = args_str.len - next_append_pos;
 
     if (final_len)
     {
@@ -5476,7 +5499,7 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts)
 
             if (opts.output_string)
             {
-                usz bytes = _seek_fd(output_fd, true);
+                sz bytes = _seek_fd(output_fd, true);
 
                 *opts.output_string = str_alloc_with_cap(bytes);
 
@@ -5484,7 +5507,7 @@ CBA_DEF b32 cmd_try_run_with_opts(Command cmd, CommandOptions opts)
                 {
                     cba_assert(_seek_fd(output_fd, false) == 0, "incorrect seek position");
 
-                    isz bytes_read = _read_fd(output_fd, opts.output_string->data, bytes);
+                    sz bytes_read = _read_fd(output_fd, opts.output_string->data, bytes);
                     cba_assert(bytes_read != -1, "failed to read from output file \"%s\": %s", output_file_path, _os_error());
 
                     opts.output_string->len = bytes_read;
@@ -5532,9 +5555,9 @@ CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim)
     String result = {0};
 
     // // @jcg: starts with 1 to keep space for a null-terminator.
-    // usz capacity = 1;
+    // sz capacity = 1;
     //
-    // for (usz i = 0; i < cmd.count; ++i)
+    // for (sz i = 0; i < cmd.count; ++i)
     // {
     //     // + 3 for space character and (possible) quotes.
     //     capacity += cmd.items[i].cap + 3; 
@@ -5542,7 +5565,7 @@ CBA_DEF String cmd_flatten_with_delims(Command cmd, char delim)
     //
     // result = str_alloc_with_cap(capacity);
 
-    for (usz i = 0; i < cmd.count; ++i)
+    for (sz i = 0; i < cmd.count; ++i)
     {
         String arg = cmd.items[i];
         cba_assert(arg.len, "argument should not be empty");

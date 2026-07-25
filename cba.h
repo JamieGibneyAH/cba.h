@@ -1537,6 +1537,19 @@ CBA_DEF const char* fmt_version(Version v);
 
 // @mark: string array
 
+/// Reserves at least `capacity` elements in the string array if the requested capacity
+/// exceeds the string array's current value. When this occurs, a new memory block is
+/// allocated via the global arena, and the string array's data is copied to the new
+/// location.
+///
+/// The previous memory block is not touched, and is essentially 'leaked' in that it will
+/// no longer be directly in use by the array or reclaimable by the arena. However, this
+/// memory will remain valid and can be accessed until the arena's memory block is freed.
+///
+/// If the string array's current capacity is greater than or equal to the requested
+/// capacity, then this function has no effect.
+CBA_DEF void str_arr_reserve(StringArray* arr, sz capacity);
+
 /// Appends a single `String` to the provided `StringArray`.
 CBA_DEF void str_arr_append_str(StringArray* arr, String str);
 
@@ -5165,6 +5178,11 @@ CBA_DEF void _str_arr_resize(StringArray* arr, sz new_len)
         arr->items = new_data;
         arr->cap = new_cap;
     }
+}
+
+CBA_DEF void str_arr_reserve(StringArray* arr, sz capacity)
+{
+    _str_arr_resize(arr, capacity);
 }
 
 CBA_DEF void str_arr_append_str(StringArray* arr, String str)

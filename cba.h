@@ -869,8 +869,10 @@ typedef struct Command Command;
 #define is_numeric(ch)      ('0' <= (ch) && (ch) <= '9')
 #define is_alphanumeric(ch) (is_alpha(ch) || is_numeric(ch))
 
-#define is_whitespace(ch) ((ch) == ' ' || (ch) == '\n' || (ch) == '\r' || (ch) == '\t')
-#define is_decimal(ch)    ((ch) == '.' || (ch) == ',')
+#define is_whitespace(ch) ((ch) == ' '  || (ch) == '\n' || (ch) == '\r' || (ch) == '\t' || (ch) == '\v' || (ch) == '\f')
+#define is_hor_space(ch)  ((ch) == ' '  || (ch) == '\r' || (ch) == '\t')
+#define is_ver_space(ch)  ((ch) == '\n' || (ch) == '\v' || (ch) == '\f')
+#define is_decimal(ch)    ((ch) == '.'  || (ch) == ',')
 #define is_separator(ch)  ((ch) == '\\' || (ch) == '/')
 
 #define kilobytes(num) ((u64)(num) << 10)

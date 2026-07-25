@@ -3188,8 +3188,14 @@ CBA_DEF i32 proc_wait(ProcessID proc, int* exit_code)
     for (;;)
     {
         int wstatus = 0;
+        int result = 0;
 
-        if (waitpid(proc, &wstatus, 0) < 0)
+        do
+        {
+            result = waitpid(proc, &wstatus, 0);
+        } while ((result == -1) && (errno == EINTR));
+
+        if (result < 1)
         {
             verbose_print("failed to wait on command with PID %d: %s", proc, _os_error());
             result = -1;

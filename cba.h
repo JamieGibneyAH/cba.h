@@ -5021,21 +5021,21 @@ CBA_DEF char* fmt_bytes(sz num_bytes)
 
     uninit char* result;
 
-    if ((num_bytes / TB) > 0)
+    if ((num_bytes / 1000000000000) > 0)
     {
-        result = alloc_sprintf("%.3lf TB", (f64)(num_bytes) * 1e-12);
+        result = alloc_sprintf("%.3lf TB", (f64)(num_bytes) / (f64)TB);
     }
-    else if ((num_bytes / GB) > 0)
+    else if ((num_bytes / 1000000000) > 0)
     {
-        result = alloc_sprintf("%.3lf GB", (f64)(num_bytes) * 1e-9);
+        result = alloc_sprintf("%.3lf GB", (f64)(num_bytes) / (f64)GB);
     }
-    else if ((num_bytes / MB) > 0)
+    else if ((num_bytes / 1000000) > 0)
     {
-        result = alloc_sprintf("%.3lf MB", (f64)(num_bytes) * 1e-6);
+        result = alloc_sprintf("%.3lf MB", (f64)(num_bytes) / (f64)MB);
     }
-    else if ((num_bytes / KB) > 0)
+    else if ((num_bytes / 1000) > 0)
     {
-        result = alloc_sprintf("%.3lf KB", (f64)(num_bytes) * 1e-3);
+        result = alloc_sprintf("%.3lf KB", (f64)(num_bytes) / (f64)KB);
     }
     else
     {

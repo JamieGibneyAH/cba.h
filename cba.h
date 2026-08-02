@@ -4090,10 +4090,7 @@ CBA_DEF StringArray str_split_by(String str, char delim)
         str_arr_append_str(&result, s);
     }
 
-    if (!result.count)
-    {
-        str_arr_append_str(&result, str);
-    }
+    str_arr_append_str(&result, str);
 
     return result;
 }

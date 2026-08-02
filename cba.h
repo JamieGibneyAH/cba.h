@@ -964,6 +964,8 @@ CBA_DEF void __cba_rebuild(int argc, char** argv, const char* source_path, ...);
 /// point in particular, but they are always relative to each other.
 CBA_DEF u64 nanos_now(void);
 
+#define timed_block(name) for (u64 _nss = nanos_now(), done = 0; done == 0; print("%s: %s", (name), fmt_time(nanos_now() - _nss, 0)), done = 1)
+
 /// Sleeps the current thread for `ms` milliseconds.
 CBA_DEF void wait_ms(u64 ms);
 

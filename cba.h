@@ -1060,13 +1060,13 @@ CBA_DEF char* surround_bq(const char* cstr);
 
 // @mark: files
 
-/// If any files in the `input_paths` array have been modified since the file at
+/// If any *regular* files in the `input_paths` array have been modified since the file at
 /// `output_path`, `1` is returned and `0` otherwise. If an error occurs, `-1` is
 /// returned.
 CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths);
-/// If the file at `input_path` has been modified since the file at `output_path`, `1` is
-/// returned and `0` otherwise. If an error occurs (i.e. a filesystem error), `-1` is
-/// returned.
+/// If the file at `input_path` is a *regular* file and has been modified since the file at
+/// `output_path`, `1` is returned and `0` otherwise. If an error occurs (i.e. a
+/// filesystem error), `-1` is returned.
 CBA_DEF i32 file_needs_rebuild(String output_path, String input_path);
 
 /// Creates a file at `path`, returning true if the operation succeeded.
@@ -1116,9 +1116,22 @@ CBA_DEF b32 file_try_create_directory(const char* path);
 /// If `include_directory_path` is `true`, the resulting strings will include the
 /// directory path. 
 ///
+/// If `include_dir_entries` is `true`, any nested directory entries are included in the
+/// output.
+///
 /// For example, for a directory `/a/b` containing files `c.txt` and `d.txt`:
 /// `str_to_directory_entries(path, true); // -> { "/a/b/c.txt", "/a/b/d.txt" }`
-CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_directory_path);
+CBA_DEF StringArray file_get_directory_entries(const char* path,
+                                               b32 include_directory_path,
+                                               b32 include_dir_entries);
+
+/// Attempts to return the file names of all entries within a directory at `path`,
+/// recursively. If this fails, the resulting array will be zeroed. All paths will include
+/// their parent directory.
+///
+/// The resulting array will always begin with the 'most nested' elements, progressing
+/// towards the 'least nested' elements.
+CBA_DEF StringArray file_get_recursive_directory_entries(const char* path);
 
 // @mark: processes
 
@@ -2357,32 +2370,35 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths)
             {
                 char* input_path_cstr = str_to_cstr(input_paths.items[i]);
 
-                HANDLE input_path_fd = CreateFileA(input_path_cstr, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
-
-                if (input_path_fd != INVALID_HANDLE_VALUE)
+                if (file_get_kind(input_path_cstr) == FILE_KIND_REGULAR)
                 {
-                    uninit FILETIME input_path_time;
-                    BOOL found_input_file_time = GetFileTime(input_path_fd, NULL, NULL, &input_path_time);
-                    CloseHandle(input_path_fd);
+                    HANDLE input_path_fd = CreateFileA(input_path_cstr, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
 
-                    if (found_input_file_time)
+                    if (input_path_fd != INVALID_HANDLE_VALUE)
                     {
-                        if (CompareFileTime(&input_path_time, &output_path_time) == 1)
+                        uninit FILETIME input_path_time;
+                        BOOL found_input_file_time = GetFileTime(input_path_fd, NULL, NULL, &input_path_time);
+                        CloseHandle(input_path_fd);
+
+                        if (found_input_file_time)
                         {
-                            result = 1;
-                            break;
+                            if (CompareFileTime(&input_path_time, &output_path_time) == 1)
+                            {
+                                result = 1;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            verbose_print("failed to stat input file \"%s\": %s", input_path_cstr, _os_error());
+                            result = -1;
                         }
                     }
                     else
                     {
-                        verbose_print("failed to stat input file \"%s\": %s", input_path_cstr, _os_error());
+                        verbose_print("failed to open input file \"%s\": %s", input_path_cstr, _os_error());
                         result = -1;
                     }
-                }
-                else
-                {
-                    verbose_print("failed to open input file \"%s\": %s", input_path_cstr, _os_error());
-                    result = -1;
                 }
             }
         }
@@ -2417,19 +2433,22 @@ CBA_DEF i32 files_need_rebuild(String output_path, StringArray input_paths)
         {
             char* input_path_cstr = str_to_cstr(input_paths.items[i]);
 
-            if (stat(input_path_cstr, &statbuf) >= 0)
+            if (file_get_kind(input_path_cstr) == FILE_KIND_REGULAR)
             {
-                time_t input_path_time = statbuf.st_mtime;
-                if (input_path_time > output_path_time)
+                if (stat(input_path_cstr, &statbuf) >= 0)
                 {
-                    result = 1;
-                    break;
+                    time_t input_path_time = statbuf.st_mtime;
+                    if (input_path_time > output_path_time)
+                    {
+                        result = 1;
+                        break;
+                    }
                 }
-            }
-            else
-            {
-                verbose_print("failed to stat input file \"%s\": %s", input_path_cstr, _os_error());
-                result = -1;
+                else
+                {
+                    verbose_print("failed to stat input file \"%s\": %s", input_path_cstr, _os_error());
+                    result = -1;
+                }
             }
         }
     }
@@ -2886,7 +2905,9 @@ CBA_DEF b32 file_try_create_directory(const char* path)
     return result;
 }
 
-CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_directory_path)
+CBA_DEF StringArray file_get_directory_entries(const char* path,
+                                               b32 include_directory_path,
+                                               b32 include_dir_entries)
 {
     StringArray result = {0};
 
@@ -2928,7 +2949,13 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
                 }
             }
 
-            str_arr_append_str(&result, entry);
+            char* entry_cstr = str_to_cstr(entry);
+            b32 is_dir = file_get_kind(entry_cstr) == FILE_KIND_DIRECTORY;
+
+            if (!is_dir || include_dir_entries)
+            {
+                str_arr_append_str(&result, entry);
+            }
         } while (FindNextFileA(file, &find_data));
 
         if (GetLastError() != ERROR_NO_MORE_FILES)
@@ -2968,13 +2995,43 @@ CBA_DEF StringArray file_get_directory_entries(const char* path, b32 include_dir
 
             if (!str_ends_with(entry, ".") && !str_ends_with(entry, ".."))
             {
-                str_arr_append_str(&result, entry);
+                b32 is_dir = dent->d_type == DT_DIR;
+
+                if (!is_dir || include_dir_entries)
+                {
+                    str_arr_append_str(&result, entry);
+                }
             }
         }
     }
 
     closedir(d);
 #endif
+
+    return result;
+}
+
+CBA_DEF StringArray file_get_recursive_directory_entries(const char* path)
+{
+    StringArray result = {0};
+
+    if (file_get_kind(path) == FILE_KIND_DIRECTORY)
+    {
+        StringArray entries = file_get_directory_entries(path, true, true);
+
+        for (sz i = 0; i < entries.count; ++i)
+        {
+            char* path_cstr = str_to_cstr(entries.items[i]);
+            StringArray children = file_get_recursive_directory_entries(path_cstr);
+
+            if (children.count)
+            {
+                str_arr_concat(&result, children);
+            }
+        }
+
+        str_arr_concat(&result, entries);
+    }
 
     return result;
 }
@@ -5193,7 +5250,7 @@ CBA_DEF void str_arr_append_str(StringArray* arr, String str)
 
     _str_arr_resize(arr, arr->count + 1);
 
-    arr->items[arr->count] = str;
+    arr->items[arr->count] = str_copy(str);
     arr->count += 1;
 }
 
